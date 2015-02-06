@@ -98,6 +98,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     add_extra_compiler_option(-pthread)
   endif()
 
+  if(CMAKE_COMPILER_IS_CLANGCXX)
+    add_extra_compiler_option(-Qunused-arguments)
+  endif()
+
   if(OPENCV_WARNINGS_ARE_ERRORS)
     add_extra_compiler_option(-Werror)
   endif()
