@@ -71,6 +71,7 @@ static void setCurrentThreadAffinityMask(int mask)
 #endif
 
 static double perf_stability_criteria = 0.03; // 3%
+static const double accuracy_absolute_threshold = 0.005;
 
 namespace {
 
@@ -432,6 +433,7 @@ static int countViolations(const cv::Mat& expected, const cv::Mat& actual, const
     cv::Mat maximum, mask;
     cv::max(expected_abs, actual_abs, maximum);
     cv::multiply(maximum, cv::Vec<double, 1>(eps), maximum, CV_64F);
+    cv::add(maximum, accuracy_absolute_threshold, maximum);
     cv::compare(diff64f, maximum, mask, cv::CMP_GT);
 
     int v = cv::countNonZero(mask);
