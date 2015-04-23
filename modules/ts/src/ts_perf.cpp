@@ -71,7 +71,6 @@ static void setCurrentThreadAffinityMask(int mask)
 #endif
 
 static double perf_stability_criteria = 0.03; // 3%
-static const double accuracy_absolute_threshold = 0.005;
 
 namespace {
 
@@ -137,6 +136,8 @@ Regression& Regression::addMoments(TestBase* test, const std::string& name, cons
 {
     int len = (int)sizeof(cv::Moments) / sizeof(double);
     cv::Mat m(1, len, CV_64F, (void*)&array);
+    //ading 1 to moments to avoid accidental tests fail on laues close to 0
+    cv::add(m, 1, m);
 
     return Regression::add(test, name, m, eps, err);
 }
@@ -433,7 +434,6 @@ static int countViolations(const cv::Mat& expected, const cv::Mat& actual, const
     cv::Mat maximum, mask;
     cv::max(expected_abs, actual_abs, maximum);
     cv::multiply(maximum, cv::Vec<double, 1>(eps), maximum, CV_64F);
-    cv::add(maximum, accuracy_absolute_threshold, maximum);
     cv::compare(diff64f, maximum, mask, cv::CMP_GT);
 
     int v = cv::countNonZero(mask);
