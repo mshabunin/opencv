@@ -413,6 +413,13 @@ enum ConnectedComponentsTypes {
     CC_STAT_MAX    = 5
 };
 
+//! connected components algorithm
+enum ConnectedComponentsAlgorithmsTypes {
+    CCL_WU      = 0,  //!< SAUF algorithm for 8-way connectivity, SAUF algorithm for 4-way connectivity
+    CCL_DEFAULT = -1, //!< BBDT algortihm for 8-way connectivity, SAUF algorithm for 4-way connectivity
+    CCL_GRANA   = 1   //!< BBDT algorithm for 8-way connectivity, SAUF algorithm for 4-way connectivity
+};
+
 //! mode of the contour retrieval algorithm
 enum RetrievalModes {
     /** retrieves only the extreme outer contours. It sets `hierarchy[i][2]=hierarchy[i][3]=-1` for
@@ -2507,7 +2514,7 @@ CV_EXPORTS_AS(integral2) void integral( InputArray src, OutputArray sum,
 
 /** @brief Calculates the integral of an image.
 
-The functions calculate one or more integral images for the source image as follows:
+The function calculates one or more integral images for the source image as follows:
 
 \f[\texttt{sum} (X,Y) =  \sum _{x<X,y<Y}  \texttt{image} (x,y)\f]
 
@@ -3348,7 +3355,7 @@ An example on using the distance transform\
 
 /** @brief Calculates the distance to the closest zero pixel for each pixel of the source image.
 
-The functions distanceTransform calculate the approximate or precise distance from every binary
+The function cv::distanceTransform calculates the approximate or precise distance from every binary
 image pixel to the nearest zero pixel. For zero image pixels, the distance will obviously be zero.
 
 When maskSize == DIST_MASK_PRECISE and distanceType == DIST_L2 , the function runs the
@@ -3432,7 +3439,7 @@ CV_EXPORTS int floodFill( InputOutputArray image,
 
 /** @brief Fills a connected component with the given color.
 
-The functions floodFill fill a connected component starting from the seed point with the specified
+The function cv::floodFill fills a connected component starting from the seed point with the specified
 color. The connectivity is determined by the color/brightness closeness of the neighbor pixels. The
 pixel at \f$(x,y)\f$ is considered to belong to the repainted domain if:
 
@@ -3648,15 +3655,55 @@ CV_EXPORTS_W void matchTemplate( InputArray image, InputArray templ,
 image with 4 or 8 way connectivity - returns N, the total number of labels [0, N-1] where 0
 represents the background label. ltype specifies the output label image type, an important
 consideration based on the total number of labels or alternatively the total number of pixels in
-the source image.
+the source image. ccltype specifies the connected components labeling algorithm to use, currently
+Grana's (BBDT) and Wu's (SAUF) algorithms are supported, see the cv::ConnectedComponentsAlgorithmsTypes
+for details. Note that SAUF algorithm forces a row major ordering of labels while BBDT does not.
 
 @param image the 8-bit single-channel image to be labeled
 @param labels destination labeled image
 @param connectivity 8 or 4 for 8-way or 4-way connectivity respectively
 @param ltype output image label type. Currently CV_32S and CV_16U are supported.
- */
+@param ccltype connected components algorithm type (see the cv::ConnectedComponentsAlgorithmsTypes).
+*/
+CV_EXPORTS_AS(connectedComponentsWithAlgorithm) int connectedComponents(InputArray image, OutputArray labels,
+                                                                        int connectivity, int ltype, int ccltype);
+
+
+/** @overload
+
+@param image the 8-bit single-channel image to be labeled
+@param labels destination labeled image
+@param connectivity 8 or 4 for 8-way or 4-way connectivity respectively
+@param ltype output image label type. Currently CV_32S and CV_16U are supported.
+*/
 CV_EXPORTS_W int connectedComponents(InputArray image, OutputArray labels,
                                      int connectivity = 8, int ltype = CV_32S);
+
+
+/** @brief computes the connected components labeled image of boolean image and also produces a statistics output for each label
+
+image with 4 or 8 way connectivity - returns N, the total number of labels [0, N-1] where 0
+represents the background label. ltype specifies the output label image type, an important
+consideration based on the total number of labels or alternatively the total number of pixels in
+the source image. ccltype specifies the connected components labeling algorithm to use, currently
+Grana's (BBDT) and Wu's (SAUF) algorithms are supported, see the cv::ConnectedComponentsAlgorithmsTypes
+for details. Note that SAUF algorithm forces a row major ordering of labels while BBDT does not.
+
+
+@param image the 8-bit single-channel image to be labeled
+@param labels destination labeled image
+@param stats statistics output for each label, including the background label, see below for
+available statistics. Statistics are accessed via stats(label, COLUMN) where COLUMN is one of
+cv::ConnectedComponentsTypes. The data type is CV_32S.
+@param centroids centroid output for each label, including the background label. Centroids are
+accessed via centroids(label, 0) for x and centroids(label, 1) for y. The data type CV_64F.
+@param connectivity 8 or 4 for 8-way or 4-way connectivity respectively
+@param ltype output image label type. Currently CV_32S and CV_16U are supported.
+@param ccltype connected components algorithm type (see the cv::ConnectedComponentsAlgorithmsTypes).
+*/
+CV_EXPORTS_AS(connectedComponentsWithStatsWithAlgorithm) int connectedComponentsWithStats(InputArray image, OutputArray labels,
+                                                                                          OutputArray stats, OutputArray centroids,
+                                                                                          int connectivity, int ltype, int ccltype);
 
 /** @overload
 @param image the 8-bit single-channel image to be labeled
@@ -3712,7 +3759,7 @@ CV_EXPORTS void findContours( InputOutputArray image, OutputArrayOfArrays contou
 
 /** @brief Approximates a polygonal curve(s) with the specified precision.
 
-The functions approxPolyDP approximate a curve or a polygon with another curve/polygon with less
+The function cv::approxPolyDP approximates a curve or a polygon with another curve/polygon with less
 vertices so that the distance between them is less or equal to the specified precision. It uses the
 Douglas-Peucker algorithm <http://en.wikipedia.org/wiki/Ramer-Douglas-Peucker_algorithm>
 
@@ -3854,7 +3901,7 @@ An example using the convexHull functionality
 
 /** @brief Finds the convex hull of a point set.
 
-The functions find the convex hull of a 2D point set using the Sklansky's algorithm @cite Sklansky82
+The function cv::convexHull finds the convex hull of a 2D point set using the Sklansky's algorithm @cite Sklansky82
 that has *O(N logN)* complexity in the current implementation. See the OpenCV sample convexhull.cpp
 that demonstrates the usage of different function variants.
 
@@ -4123,7 +4170,7 @@ CV_EXPORTS_W void circle(InputOutputArray img, Point center, int radius,
 
 /** @brief Draws a simple or thick elliptic arc or fills an ellipse sector.
 
-The functions ellipse with less parameters draw an ellipse outline, a filled ellipse, an elliptic
+The function cv::ellipse with less parameters draws an ellipse outline, a filled ellipse, an elliptic
 arc, or a filled ellipse sector. A piecewise-linear curve is used to approximate the elliptic arc
 boundary. If you need more control of the ellipse rendering, you can retrieve the curve using
 ellipse2Poly and then render it with polylines or fill it with fillPoly . If you use the first
@@ -4344,9 +4391,9 @@ CV_EXPORTS_W void drawContours( InputOutputArray image, InputArrayOfArrays conto
 
 /** @brief Clips the line against the image rectangle.
 
-The functions clipLine calculate a part of the line segment that is entirely within the specified
-rectangle. They return false if the line segment is completely outside the rectangle. Otherwise,
-they return true .
+The function cv::clipLine calculates a part of the line segment that is entirely within the specified
+rectangle. it returns false if the line segment is completely outside the rectangle. Otherwise,
+it returns true .
 @param imgSize Image size. The image rectangle is Rect(0, 0, imgSize.width, imgSize.height) .
 @param pt1 First line point.
 @param pt2 Second line point.
