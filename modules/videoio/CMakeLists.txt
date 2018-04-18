@@ -112,6 +112,17 @@ if(HAVE_GSTREAMER)
   list(APPEND videoio_srcs ${CMAKE_CURRENT_LIST_DIR}/src/cap_gstreamer.cpp)
 endif(HAVE_GSTREAMER)
 
+if(HAVE_GSTREAMER)
+    include(FindPkgConfig)
+    pkg_check_modules(GST REQUIRED gstreamer-1.0)
+    pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
+    add_library(gstreamer INTERFACE IMPORTED)
+    set_target_properties(gstreamer PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${GST_INCLUDE_DIRS};${GST_APP_INCLUDE_DIRS}"
+        INTERFACE_LINK_LIBRARIES "${GST_LDFLAGS};${GST_APP_LDFLAGS}"
+        INTERFACE_COMPILE_DEFINITIONS OPENCV_WITH_GSTREAMER)
+endif()
+
 if(HAVE_UNICAP)
   list(APPEND videoio_srcs ${CMAKE_CURRENT_LIST_DIR}/src/cap_unicap.cpp)
 endif(HAVE_UNICAP)
@@ -300,6 +311,11 @@ endmacro()
 
 if(NOT BUILD_opencv_world)
   ocv_videoio_configure_target()
+endif()
+
+
+if(HAVE_GSTREAMER)
+    target_link_libraries(${the_module} INTERFACE gstreamer)
 endif()
 
 ocv_add_accuracy_tests()
