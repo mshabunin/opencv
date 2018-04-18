@@ -25,24 +25,3 @@ TEST(Experimental, Props)
 }
 
 } // cvtest::
-
-#ifdef HAVE_GSTREAMER
-
-#include "opencv2/videoio/be_gstreamer.hpp"
-
-namespace opencv_test {
-
-TEST(Experimental, GStreamer)
-{
-    using namespace cv::experimental;
-    GStreamerCapture cap;
-    cap.be->openFile("/home/mshabuni/work/gstreamer/experiment/frames/video.mp4");
-    Mat frame;
-    cap >> frame >> frame >> frame;
-    EXPECT_EQ((int)frame.total(), 320 * 240 * 3);
-}
-
-}
-
-#endif
-

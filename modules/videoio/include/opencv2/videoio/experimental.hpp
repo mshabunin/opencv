@@ -236,38 +236,6 @@ public:
     }
 };
 
-//==================================================================================================
-
-template <typename BE>
-class NewCapture
-{
-public:
-    cv::Ptr<BE> be;
-public:
-    NewCapture() : be(BE::create()) {}
-    NewCapture(const PropMap & props) : be(BE::create(props)) {}
-    bool isOpened() const { return be && be->isOpened(); }
-    bool read(cv::OutputArray out) { return be && be->read(out); }
-    void release() { if (be) be->release(); }
-};
-
-template <typename BE>
-NewCapture<BE> & operator>>(NewCapture<BE> & cap, cv::Mat &out) { cap.read(out); return cap; }
-
-template <typename BE>
-NewCapture<BE> & operator>>(NewCapture<BE> & cap, cv::UMat &out) { cap.read(out); return cap; }
-
-//class CV_EXPORTS DummyBackend
-//{
-//public:
-//    static DummyBackend * create();
-//    static DummyBackend * create(const PropMap &);
-//    bool isOpened();
-//    bool read(cv::OutputArray out);
-//    void release();
-//};
-
-//typedef NewCapture<DummyBackend> DummyCapture;
 
 }} // cv::experimental::
 
