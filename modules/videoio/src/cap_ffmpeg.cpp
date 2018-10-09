@@ -344,4 +344,26 @@ cv::Ptr<cv::IVideoWriter> cvCreateVideoWriter_FFMPEG_proxy(const cv::String& fil
 
 } // namespace
 
+#ifdef PLUGIN_BUILD
+
+extern "C" {
+
+__attribute__ ((visibility ("default"))) cv::IVideoWriter* createWriter(const std::string& filename, int fourcc, double fps, cv::Size frameSize, int is_color)
+{
+    cv::IVideoWriter * wri = new cv::CvVideoWriter_FFMPEG_proxy(filename, fourcc, fps, frameSize, is_color);
+    std::cerr << "Returning new writer: " << (void*)wri << std::endl;
+    return wri;
+}
+
+__attribute__ ((visibility ("default"))) void releaseWriter(cv::IVideoWriter* wri)
+{
+    std::cerr << "Releasing writer: " << (void*)wri << std::endl;
+    if (wri)
+        delete wri;
+}
+
+} // extern "C"
+
+#endif
+
 #endif // defined(HAVE_FFMPEG)

@@ -334,6 +334,17 @@ bool VideoWriter::open(const String& filename, int apiPreference, int _fourcc, d
 
     if (isOpened()) release();
 
+
+
+    Ptr<PluginWriter> wri = makePtr<PluginWriter>(
+                "libopencv_videoio_ffmpeg.so",
+                filename, _fourcc, fps, frameSize, isColor);
+    if (wri->isOpened())
+    {
+        iwriter = wri;
+        return true;
+    }
+
     const std::vector<VideoBackendInfo> backends = cv::videoio_registry::getAvailableBackends_Writer();
     for (size_t i = 0; i < backends.size(); i++)
     {

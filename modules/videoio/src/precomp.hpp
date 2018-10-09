@@ -45,10 +45,15 @@
 #include "opencv2/videoio.hpp"
 
 #include "opencv2/core/utility.hpp"
+
+#ifdef __OPENCV_BUILD
 #include "opencv2/core/private.hpp"
+#endif
 
 #include <opencv2/core/utils/configuration.private.hpp>
 #include <opencv2/core/utils/logger.hpp>
+
+#include <opencv2/core/cvdef.h>
 
 #include "opencv2/imgcodecs.hpp"
 
@@ -63,6 +68,9 @@
 #include <limits.h>
 #include <ctype.h>
 #include <assert.h>  // FIXIT remove this
+
+#include <dlfcn.h>
+#include <iostream>
 
 #if defined _WIN32 || defined WINCE
     #if !defined _WIN32_WINNT
@@ -202,5 +210,55 @@ namespace cv
     Ptr<IVideoCapture> cvCreateCapture_MSMF(const String& filename);
     Ptr<IVideoWriter> cvCreateVideoWriter_MSMF(const String& filename, int fourcc, double fps, Size frameSize, int is_color);
 }
+
+typedef cv::IVideoWriter* (*FUN_CREATE_WRITER)(const std::string&, int, double, cv::Size, int);
+typedef void  (*FUN_RELEASE_WRITER)(cv::IVideoWriter*);
+
+class PluginWriter : public cv::IVideoWriter
+{
+private:
+    cv::IVideoWriter * impl;
+    FUN_CREATE_WRITER createFun;
+    FUN_RELEASE_WRITER releaseFun;
+    void * handle;
+public:
+    PluginWriter(const std::string plugin, const std::string& filename, int fourcc, double fps, cv::Size frameSize, int is_color)
+        : impl(0), createFun(0), releaseFun(0), handle(0)
+    {
+        using namespace std;
+        cerr << "Trying plugin " << plugin << endl;
+        handle = dlopen(plugin.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+        cerr << "dlopen: " << handle << endl;
+        if (handle)
+        {
+            createFun = (FUN_CREATE_WRITER)(dlsym(handle, "createWriter"));
+            releaseFun = (FUN_RELEASE_WRITER)(dlsym(handle, "releaseWriter"));
+            cerr << "Loaded functions: " << createFun << ", " << releaseFun << endl;
+            if (createFun && releaseFun)
+            {
+                impl = createFun(filename, fourcc, fps, frameSize, is_color);
+                cerr << "Called createFun: " << impl << endl;
+            }
+        }
+    }
+    ~PluginWriter()
+    {
+        if (handle)
+        {
+            if (impl && releaseFun)
+                releaseFun(impl);
+            dlclose(handle);
+        }
+    }
+
+    double getProperty(int prop) const CV_OVERRIDE { return impl->getProperty(prop); }
+    virtual bool setProperty(int prop, double val) CV_OVERRIDE { return impl->setProperty(prop, val); }
+
+    virtual bool isOpened() const CV_OVERRIDE { return impl && impl->isOpened(); }
+    virtual void write(cv::InputArray arr) CV_OVERRIDE { impl->write(arr); }
+
+    virtual int getCaptureDomain() const CV_OVERRIDE { return cv::CAP_ANY; } // Return the type of the capture object: CAP_FFMPEG, etc...
+
+};
 
 #endif /* __VIDEOIO_H_ */

@@ -44,6 +44,19 @@
 
 namespace opencv_test { namespace {
 
+TEST(plugin, test)
+{
+    VideoWriter wri("test.avi", VideoWriter::fourcc('H', '2', '6', '4'), 30, Size(640, 480));
+    ASSERT_TRUE(wri.isOpened());
+    for (int i = 0; i < 100; ++i)
+    {
+        Mat frame(Size(640, 480), CV_8UC3, Scalar::all(0));
+        rectangle(frame, Point2i(i * 10, i * 10), Point2i(i * 10 + 20, i * 10 + 20), Scalar::all(255), -1);
+        wri << frame;
+    }
+}
+
+
 #ifdef HAVE_FFMPEG
 
 using namespace std;
