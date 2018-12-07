@@ -336,9 +336,7 @@ bool VideoWriter::open(const String& filename, int apiPreference, int _fourcc, d
 
 
 
-    Ptr<PluginWriter> wri = makePtr<PluginWriter>(
-                "libopencv_videoio_ffmpeg.so",
-                filename, _fourcc, fps, frameSize, isColor);
+    Ptr<PluginWriter> wri = makePtr<PluginWriter>("libopencv_videoio_ffmpeg.so", filename, _fourcc, fps, frameSize, isColor);
     if (wri->isOpened())
     {
         iwriter = wri;
