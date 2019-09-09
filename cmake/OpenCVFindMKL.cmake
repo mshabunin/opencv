@@ -121,7 +121,7 @@ endif()
 
 set(MKL_LIBRARIES "")
 foreach(lib ${mkl_lib_list})
-    find_library(${lib} ${lib} ${mkl_lib_find_paths})
+    find_library(${lib} ${lib} ${mkl_lib_find_paths} NO_DEFAULT_PATH)
     mark_as_advanced(${lib})
     if(NOT ${lib})
         mkl_fail()
