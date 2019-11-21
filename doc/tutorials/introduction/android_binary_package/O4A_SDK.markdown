@@ -1,5 +1,7 @@
 OpenCV4Android SDK {#tutorial_O4A_SDK}
 ==================
+@warning
+This tutorial is deprecated.
 
 @prev_tutorial{tutorial_android_dev_intro}
 @next_tutorial{tutorial_dev_with_OCV_on_Android}

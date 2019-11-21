@@ -1,5 +1,7 @@
 Use OpenCL in Android camera preview based CV application {#tutorial_android_ocl_intro}
 =====================================
+@warning
+This tutorial is deprecated.
 
 @prev_tutorial{tutorial_dev_with_OCV_on_Android}
 @next_tutorial{tutorial_macos_install}

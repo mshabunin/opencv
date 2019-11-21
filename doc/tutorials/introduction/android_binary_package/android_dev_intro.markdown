@@ -1,5 +1,7 @@
 Introduction into Android Development {#tutorial_android_dev_intro}
 =====================================
+@warning
+This tutorial is deprecated.
 
 @prev_tutorial{tutorial_clojure_dev_intro}
 @next_tutorial{tutorial_O4A_SDK}

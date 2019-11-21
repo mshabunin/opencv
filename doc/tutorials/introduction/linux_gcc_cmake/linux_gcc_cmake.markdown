@@ -5,6 +5,9 @@ Using OpenCV with gcc and CMake {#tutorial_linux_gcc_cmake}
 @next_tutorial{tutorial_linux_eclipse}
 
 
+@warning
+This tutorial can contain obsolete information.
+
 @note We assume that you have successfully installed OpenCV in your workstation.
 
 -   The easiest way of using OpenCV in your code is to use [CMake](http://www.cmake.org/). A few

@@ -1,5 +1,7 @@
 How to build applications with OpenCV inside the "Microsoft Visual Studio" {#tutorial_windows_visual_studio_opencv}
 ==========================================================================
+@warning
+This tutorial can contain obsolete information.
 
 @prev_tutorial{tutorial_windows_install}
 @next_tutorial{tutorial_windows_visual_studio_image_watch}

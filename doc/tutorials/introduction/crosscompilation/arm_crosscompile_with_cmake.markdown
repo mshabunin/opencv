@@ -1,9 +1,13 @@
 Cross compilation for ARM based Linux systems {#tutorial_arm_crosscompile_with_cmake}
+Cross compilation for ARM based Linux systems {#tutorial_arm_crosscompile_with_cmake}
 =============================================
 
 @prev_tutorial{tutorial_ios_install}
 @next_tutorial{tutorial_building_tegra_cuda}
 
+
+@warning
+This tutorial can contain obsolete information.
 
 This steps are tested on Ubuntu Linux 12.04, but should work for other Linux distributions. I case
 of other distributions package names and names of cross compilation tools may differ. There are

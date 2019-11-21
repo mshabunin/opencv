@@ -6,131 +6,104 @@ Installation in Linux {#tutorial_linux_install}
 
 @tableofcontents
 
-Quick start {#tutorial_linux_install_quick_start}
-===========
+# Quick start {#tutorial_linux_install_quick_start}
 
-Build core modules {#tutorial_linux_install_quick_build_core}
-------------------
-```.sh
-# Ubuntu 18.04 as reference
-sudo apt update && apt install -y cmake g++ wget unzip
-# Download sources
-wget -O opencv.zip https://github.com/opencv/opencv/archive/master.zip
-# Unpack sources
-unzip opencv.zip
-# Create build directory and switch into it
-mkdir -p build && pushd build
-# Configure
-cmake  ../opencv-master
-# Build
-cmake --build .
-# Return to parent directory
-popd
-```
 
-Build with opencv_contrib {#tutorial_linux_install_quick_build_contrib}
--------------------------
-```.sh
-# Ubuntu 18.04 as reference
-sudo apt update && apt install -y cmake g++ wget unzip
-# Download sources
-wget -O opencv.zip https://github.com/opencv/opencv/archive/master.zip
-wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/master.zip
-# Unpack sources
-unzip opencv.zip
-unzip opencv_contrib.zip
-# Create build directory and switch into it
-mkdir -p build && pushd build
-# Configure
-cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-master/modules ../opencv-master
-# Build
-cmake --build .
-# Return to parent directory
-popd
-```
+## Build core modules {#tutorial_linux_install_quick_build_core}
 
-Detailed description {#tutorial_linux_install_detailed}
-====================
+@include linux_quick_install.sh
 
-Basic process {#tutorial_linux_install_detailed_basic}
--------------
 
-In this section we described minimal requirements for building the OpenCV library. Sections after this one demonstrate optional dependencies and features.
+## Build with opencv_contrib {#tutorial_linux_install_quick_build_contrib}
 
-### Download sources {#tutorial_linux_install_detailed_basic_download}
+@include linux_quick_install_contrib.sh
 
-One can download snapshot of repository using web browser or any download tool:
-```.sh
-wget -O opencv.zip https://github.com/opencv/opencv/archive/master.zip
-unzip opencv.zip
-mv opencv-master opencv
-```
 
-Alternatively, it is possible to clone full repository to local machine using _git_ tool:
-```.sh
-git clone https://github.com/opencv/opencv.git
-git -C opencv checkout master
-```
+# Detailed process {#tutorial_linux_install_detailed}
+
+This section covers more details of the build process and describes alternative methods or tools to use. Please refer to the @ref tutorial_general_install tutorial for general installation details and configuration options documentation.
+
+
+## Install compiler and build tools {#tutorial_linux_install_detailed_basic_compiler}
+
+- To compile OpenCV you will need a C++ compiler. Usually it is G++/GCC or Clang/LLVM:
+    - Install GCC...
+    @snippet linux_install_a.sh gcc
+    - ...or Clang:
+    @snippet linux_install_b.sh clang
+
+- OpenCV uses CMake build configuration tool:
+@snippet linux_install_a.sh cmake
+
+- CMake can generate scripts for different build systems, e.g. _make_, _ninja_:
+
+    - Install Make...
+    @snippet linux_install_a.sh make
+    - ... or Ninja:
+    @snippet linux_install_b.sh ninja
+
+- Install tool for getting and unpacking sources:
+
+    - _wget_ and _unzip_...
+    @snippet linux_install_a.sh wget
+    - ... or _git_:
+    @snippet linux_install_b.sh git
+
+
+## Download sources {#tutorial_linux_install_detailed_basic_download}
+
+There are two methods of getting OpenCV sources:
+
+- Download snapshot of repository using web browser or any download tool (~80-90Mb)...
+@snippet linux_install_a.sh download
+- ... or clone repository to local machine using _git_ to get full change history (>470Mb):
+@snippet linux_install_b.sh download
+
 
 @note
-Links to snapshots from other branches, tags or commits can be found on the [GitHub](https://github.com/opencv/opencv) and [official download page](https://opencv.org/releases.html).
+Links to snapshots of other branches, releases or commits can be found on the [GitHub](https://github.com/opencv/opencv) and [official download page](https://opencv.org/releases.html).
 
-### Install compiler and build tools {#tutorial_linux_install_detailed_basic_compiler}
 
-Install GCC...
-```.sh
-sudo apt install g++
-```
-or Clang:
-```.sh
-sudo apt install clang
-```
+## Configure and build {#tutorial_linux_install_detailed_basic_build}
 
-Install cmake and make
-```.sh
-sudo apt install cmake make
-```
+- Create build directory:
+@snippet linux_install_a.sh prepare
 
-### Configure and build {#tutorial_linux_install_detailed_basic_build}
+- Configure - generate build scripts for preferred build system:
+    - For _make_...
+    @snippet linux_install_a.sh configure
+    - ... or for _ninja_:
+    @snippet linux_install_b.sh configure
 
-Create build directory...
-```.sh
-mkdir build
-cd build
-```
+- Build - run actual compilation process:
+    - Using _make_...
+    @snippet linux_install_a.sh build
+    - ...or _ninja_:
+    @snippet linux_install_b.sh build
 
-configure...
-```.sh
-cmake ../opencv
-```
-
-and build.
-```.sh
-make
-```
 
 @note
-In most cases, after installing new dependency build directory should be cleaned up (`rm -rf build`). Otherwise configuration process will not be able to find this dependency or can generate incorrect build scripts.
-
-
-### Check build results {#tutorial_linux_install_detailed_basic_verify}
-
-By default you can find built libraries in the `build/lib` directory and all executables (test, samples, apps) in the `build/bin` directory:
-```.sh
-ls bin
-ls lib
-```
-
-cmake package files can be found in the build root:
-```.sh
-ls OpenCVConfig*.cmake
-ls OpenCVModules.cmake
-```
+If you experience problems with the build process try to clean or recreate build directory. Changes in configuration like disabling a dependency, modifying build scripts or switching sources to another branch are not handled very well and can result in broken workspace.
 
 @note
-The library can be used right after building even without installation. _cmake_ can find package files in the build directory by using the following environment variable:
-```.sh
-export OpenCV_DIR=<absolute-path-to-build>
-```
+Refer to the @ref tutorial_general_install tutorial for full configuration options reference.
+
+@note
+Make can run multiple compilation processes in parallel, `-j<NUM>` option means "run `<NUM>` jobs simultaneously". Ninja will automatically detect number of available processor cores and does not need `-j` option.
+
+
+## Check build results {#tutorial_linux_install_detailed_basic_verify}
+
+After successful build you will find libraries in the `build/lib` directory and executables (test, samples, apps) in the `build/bin` directory:
+@snippet linux_install_a.sh check
+
+CMake package files will be located in the build root:
+@snippet linux_install_a.sh check cmake
+
+
+## Install to the system
+
+@note
+This step is optional, OpenCV can be used from build directory or installed to local user-owned directory.
 
     -   Installed as `opencv4`, usage: `pkg-config --cflags --libs opencv4`

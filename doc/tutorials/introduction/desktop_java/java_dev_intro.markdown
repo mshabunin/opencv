@@ -5,6 +5,9 @@ Introduction to Java Development {#tutorial_java_dev_intro}
 @next_tutorial{tutorial_java_eclipse}
 
 
+@warning
+This tutorial can contain obsolete information.
+
 As of OpenCV 2.4.4, OpenCV supports desktop Java development using nearly the same interface as for
 Android development. This guide will help you to create your first Java (or Scala) application using
 OpenCV. We will use either [Apache Ant](http://ant.apache.org/) or [Simple Build Tool

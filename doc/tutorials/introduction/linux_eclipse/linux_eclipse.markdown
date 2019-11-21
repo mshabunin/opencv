@@ -4,6 +4,9 @@ Using OpenCV with Eclipse (plugin CDT) {#tutorial_linux_eclipse}
 @prev_tutorial{tutorial_linux_gcc_cmake}
 @next_tutorial{tutorial_windows_install}
 
+@warning
+This tutorial can contain obsolete information.
+
 Prerequisites
 -------------
 Two ways, one by forming a project directly, and another by CMake Prerequisites
