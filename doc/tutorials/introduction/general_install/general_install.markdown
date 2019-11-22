@@ -1,5 +1,5 @@
-OpenCV installation overview and options reference {#tutorial_general_install}
-==================================================
+OpenCV installation overview {#tutorial_general_install}
+============================
 
 @tableofcontents
 
