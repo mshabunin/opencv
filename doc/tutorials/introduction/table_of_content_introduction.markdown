@@ -1,7 +1,8 @@
 Introduction to OpenCV {#tutorial_table_of_content_introduction}
 ======================
 
-@subpage tutorial_general_install - General description of the installation process, configuration options reference
+- @subpage tutorial_general_install - Overview of build and installation process
+- @subpage tutorial_config_reference - Configuration options reference
 
 ##### Linux
 -   @subpage tutorial_linux_install
@@ -35,7 +36,7 @@ Introduction to OpenCV {#tutorial_table_of_content_introduction}
 -   @subpage tutorial_arm_crosscompile_with_cmake
 -   @subpage tutorial_building_tegra_cuda
 
-##### Basics
+##### Usage basics
 -   @subpage tutorial_display_image - We will learn how to load an image from file and display it using OpenCV
 -   @subpage tutorial_load_save_image - We will learn how to save an image to file in OpenCV
 

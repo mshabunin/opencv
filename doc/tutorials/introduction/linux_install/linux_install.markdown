@@ -21,7 +21,7 @@ Installation in Linux {#tutorial_linux_install}
 
 # Detailed process {#tutorial_linux_install_detailed}
 
-This section provides more details of the build process and describes alternative methods and tools. Please refer to the @ref tutorial_general_install tutorial for general installation details and configuration options documentation.
+This section provides more details of the build process and describes alternative methods and tools. Please refer to the @ref tutorial_general_install tutorial for general installation details and to @ref tutorial_config_reference for configuration options documentation.
 
 
 ## Install compiler and build tools {#tutorial_linux_install_detailed_basic_compiler}
@@ -83,7 +83,7 @@ Snapshots of other branches, releases or commits can be found on the [GitHub](ht
 
 
 @note
-_Configure_ process can download some files from the internet to satisfy library dependencies, connection failures can cause some of modules or functionalities to be turned off or behave differently. Refer to the @ref tutorial_general_install tutorial for details and full configuration options reference.
+_Configure_ process can download some files from the internet to satisfy library dependencies, connection failures can cause some of modules or functionalities to be turned off or behave differently. Refer to the @ref tutorial_general_install and @ref tutorial_config_reference tutorials for details and full configuration options reference.
 
 @note
 If you experience problems with the build process try to clean or recreate build directory. Changes in configuration like disabling a dependency, modifying build scripts or switching sources to another branch are not handled very well and can result in broken workspace.
@@ -118,4 +118,4 @@ Since `/usr/local` is owned by root, the installation should be performed with e
 or
 @snippet linux_install_b.sh install
 
-Installation root directory can be changed with `CMAKE_INSTALL_PREFIX` configuration parameter, e.g. `-DCMAKE_INSTALL_PREFIX=$HOME/.local` to install to current user's local directory. Installation layout can be changed with `OPENCV_*_INSTALL_PATH` parameters. See @ref tutorial_general_install tutorial for details.
+Installation root directory can be changed with `CMAKE_INSTALL_PREFIX` configuration parameter, e.g. `-DCMAKE_INSTALL_PREFIX=$HOME/.local` to install to current user's local directory. Installation layout can be changed with `OPENCV_*_INSTALL_PATH` parameters. See @ref tutorial_config_reference tutorial for details.

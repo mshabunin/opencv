@@ -1,267 +1,105 @@
-OpenCV installation process overview {#tutorial_general_install}
-====================================
+OpenCV installation overview and options reference {#tutorial_general_install}
+==================================================
 
-Prebuilt version {#tutorial_general_install_prebuilt}
-================
+@tableofcontents
 
-Packages provided by OpenCV core team:
+# Prebuilt version {#tutorial_general_install_prebuilt}
 
-- Android, iOS, Windows
-- no contrib
-- mostly default parameters
-- files attached to releases https://github.com/opencv/opencv/releases
-- sourceforge.net https://sourceforge.net/projects/opencvlibrary/files/
+In most cases there can be found prebuilt version of OpenCV that will meet your needs.
 
-Third-party packages:
+## Packages by OpenCV core team  {#tutorial_general_install_prebuilt_core}
 
-- system packages on Linux (https://pkgs.org/download/opencv)
-- pip https://pypi.org/search/?q=opencv
-- conda https://anaconda.org/search?q=opencv
-- conan https://github.com/conan-community/conan-opencv
-- vcpkg https://github.com/microsoft/vcpkg/tree/master/ports/opencv
-- nuget https://www.nuget.org/packages?q=opencv
-- brew https://formulae.brew.sh/formula/opencv
-- maven https://search.maven.org/search?q=opencv
-- others
+Packages for Android, iOS and Windows built with default parameters and recent compilers are published for each release, they do not contain _opencv_contrib_ modules.
+
+- GitHub releases: https://github.com/opencv/opencv/releases
+- SourceForge.net: https://sourceforge.net/projects/opencvlibrary/files/
 
 
-Build from sources {#tutorial_general_install_sources}
-==================
+## Third-party packages  {#tutorial_general_install_prebuilt_thirdparty}
 
-Steps
------
+Other organizations and people maintain their own distributions of OpenCV. Some examples can be found in following locations:
 
-- Prepare the system: install compiler, build tools and cmake
-- Get OpenCV sources: download archive or clone repository(ies)
-- Configure: cmake ../opencv
-- Build: cmake --build .
-- Install: cmake --build . --target install
+- System packages in popular Linux distributions (https://pkgs.org/download/opencv)
+- PyPI (https://pypi.org/search/?q=opencv)
+- Conda (https://anaconda.org/search?q=opencv)
+- Conan (https://github.com/conan-community/conan-opencv)
+- Vcpkg (https://github.com/microsoft/vcpkg/tree/master/ports/opencv)
+- NuGet (https://www.nuget.org/packages?q=opencv)
+- Brew (https://formulae.brew.sh/formula/opencv)
+- Maven (https://search.maven.org/search?q=opencv)
 
-Advanced build features {#tutorial_general_install_detailed_advanced}
------------------------
 
-OpenCV library has modular structure where each module can depend on other modules and 3rdparty libraries. There are also exist several features allowing to modify build process and produce binaries in different form.
+# Build from sources {#tutorial_general_install_sources}
 
-### Debug build {#tutorial_general_install_detailed_advanced_debug}
+In some cases existing binary packages do not fit your use case, then you'll have to build custom version of OpenCV by yourself. This section contains high-level overview of build and installation process. Check tutorial corresponding to your platform for actual build instructions.
 
-Binaries will contain debug symbols and all optimizations will be turned off. On some platforms (e.g. Linux) this option should be enabled during configuration stage, because build directory can contain only one configuration:
-```.sh
-cmake -DCMAKE_BUILD_TYPE=Debug ../opencv
-```
-Other platforms can switch between configurations during build step (e.g. Visual Studio, XCode):
-```.bat
-cmake --build . --config Debug
-```
+OpenCV uses [CMake](https://cmake.org/) build management system for configuration and build, so this section just describes generalized process of building software with CMake.
 
-### Static build {#tutorial_general_install_detailed_advanced_static}
 
-Binaries will not be linked to dynamic libraries but packed into `.a` or `.lib` archives.
-It is controlled by _cmake_ option:
-```.sh
-cmake -DBUILD_SHARED_LIBS=OFF ../opencv
-```
-Read more here: https://en.wikipedia.org/wiki/Static_library
+## Step 0: Prepare the system {#tutorial_general_install_sources_0}
 
-### Generate pkg-config info
+Install C++ compiler and build tools. On \*NIX platforms it is usually G++ or Clang compiler and Make or Ninja build tool. On Windows it can be Visual Studio IDE or MinGW-w64 compiler. Native toolchains for Android are provided in Android NDK. XCode is used to build software for OSX and iOS.
 
-This file can be useful for projects not using CMake. Please note that resulting `.pc` file can contain incomplete list of third-party dependencies and may not work in some configurations, especially for static builds.
+Install CMake from official site, your Linux distribution repository or any other sources.
+
+Get other third-party dependencies: it can be libraries and/or tools which are required for extra functionality like decoding videos or showing GUI elements; others can provide optimized implementations of some algorithms; additional tools can be used for documentation generation and other extras.
+
+
+## Step 1: Get software sources {#tutorial_general_install_sources_1}
+
+Software projects consists of one or multiple code repositories. OpenCV have two code repositories: _opencv_ - main repository with most stable and actively supported algorithms; _opencv_contrib_ - additional experimental and non-free (patented) algorithms.
+
+You can download a snapshot of repository - state of the code at some moment of time; or clone full repository - this method will get all development history and will allow you to switch to any state at any time.
+
+To download snapshot archives:
+
+- Go to https://github.com/opencv/opencv/releases and download "Source code" archive from any release, e.g. 4.1.2.
+- (optionally) Go to https://github.com/opencv/opencv_contrib/releases and download "Source code" archive for the same release as _opencv_
+- Unpack all archives to some location
+
+To clone repositories run the following commands in console (_git_ must be installed):
 
 ```.sh
-cmake -DOPENCV_GENERATE_PKGCONFIG=ON ../opencv
-```
+git clone https://github.com/opencv/opencv
+git -C opencv checkout <some-tag>
 
-### Build on multiple cores {#tutorial_general_install_detailed_advanced_cores}
-
-Some build tools can run several jobs at the same time, thus speeding up the compilation process. For example, _make_ has `-j` option for number of tasks run in parallel:
-
-```.sh
-make -j10
-```
-
-### Install to specific directory {#tutorial_general_install_detailed_advanced_install}
-
-To install produced binaries root location should be configured. Default value depends on distribution, in Ubuntu it is usually set to `/usr/local`. It can be changed during configuration:
-```.sh
-cmake -DCMAKE_INSTALL_PREFIX=/opt/opencv ../opencv
-```
-This path can be relative to current working directory, in the following example it will be set to `<absolute-path-to-build>/install`:
-```.sh
-cmake -DCMAKE_INSTALL_PREFIX=install ../opencv
-```
-
-After building the library, all files can be copied to the configured install location using the following command:
-```.sh
-cmake --build . --target install
-```
-
-To install binaries to the system location (e.g. `/usr/local`) as a regular user it is necessary to run the previous command with elevated privileges:
-```.sh
-sudo cmake --build . --target install
+# optionally
+git clone https://github.com/opencv/opencv_contrib
+git -C opencv_contrib checkout <same-tag-as-opencv>
 ```
 
 @note
-On some platforms (Linux) it is possible to remove symbol information during install. Binaries will become 10-15% smaller but debugging ability will be limited:
-```.sh
-cmake --build . --target install/strip
+If you want to build software from more than one repository, make sure that they are compatible with each other. For OpenCV it means that _opencv_ and _opencv_contrib_ repositories must be checked out to the same tag and snapshot archives are downloaded from the same release.
+
+
+## Step 2: Configure {#tutorial_general_install_sources_2}
+
+Process of configuration will verify that all necessary tools and dependencies are available and compatible with the library and will generate intermediate files required by chosen build system. The result can vary from basic Makefiles to more complex IDE projects and solutions. Usually this step is performed in newly created build directory by command:
 ```
-
-### Build tests, samples and applications {#tutorial_general_install_detailed_advanced_tests}
-
-There are two kinds of tests: accuracy (`opencv_test_*`) and performance (`opencv_perf_*`).Tests and applications are enabled by default. Examples are not being built by default and should be enabled explicitly.
-
-Corresponding _cmake_ options:
-```.sh
-cmake \
-  -DBUILD_TESTS=ON \
-  -DBUILD_PERF_TESTS=ON \
-  -DBUILD_EXAMPLES=ON \
-  -DBUILD_opencv_apps=ON \
-  ../opencv
-```
-
-### Build limited set of modules {#tutorial_general_install_detailed_advanced_modules}
-
-Each module is a subdirectory of the `modules` directory. It is possible to disable one module:
-```.sh
-cmake -DBUILD_opencv_calib3d=OFF ../opencv
-```
-
-The opposite option is to build only specified modules and all modules they depend on:
-```.sh
-cmake -DBUILD_LIST=calib3d,videoio,ts ../opencv
-```
-In this example we requested 3 modules and configuration script has determined all dependencies automatically:
-```
---   OpenCV modules:
---     To be built:                 calib3d core features2d flann highgui imgcodecs imgproc ts videoio
-```
-
-### Build with extra modules (opencv_contrib) {#tutorial_general_install_detailed_advanced_contrib}
-
-It is possible to add more modules from external directories:
-```.sh
-cmake -DOPENCV_EXTRA_MODULES_PATH=../my_module ../opencv
-```
-
-[opencv_contrib](https://github.com/opencv/opencv_contrib) repository contains experimental modules, it can be downloaded from the GitHub:
-```.sh
-wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/master.zip
-unzip opencv_contrib.zip
-mv opencv_contrib-master opencv_contrib
-```
-
-All modules from this repository can be added to the compilation:
-```.sh
-cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules ../opencv
-```
-
-Several locations can be added as a `;`-separated list (semicolon must be escaped in bash):
-```.sh
-cmake \
-  -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules/bgsegm\;../opencv_contrib/modules/bioinspired \
-  ../opencv
-```
-
-### Downloaded dependencies {#tutorial_general_install_detailed_advanced_download}
-
-Configuration script can try to download additional libraries and files from the internet, if it fails to do it corresponding features will be turned off. In some cases configuration error can occur. By default all files are first downloaded to the `<source>/.cache` directory and then unpacked or copied to the build directory. It is possible to change download cache location by setting environment variable or configuration option:
-```.sh
-export OPENCV_DOWNLOAD_PATH=/tmp/opencv-cache
-cmake ../opencv
-# or
-cmake -DOPENCV_DOWNLOAD_PATH=/tmp/opencv-cache ../opencv
-```
-
-In case of access via proxy, corresponding environment variables should be set before running cmake:
-```.sh
-export http_proxy=<proxy-host>:<port>
-export https_proxy=<proxy-host>:<port>
-```
-
-Full log of download process can be found in build directory - `CMakeDownloadLog.txt`. In addition, for each failed download a command will be added to helper scripts in the build directory, e.g. `download_with_wget.sh`. Users can run these scripts as is or modify according to their needs.
-
-
-### CPU optimization level {#tutorial_general_install_detailed_advanced_cpu}
-
-On x86_64 machines the library will be compiled for SSE3 instruction set level by default. This level can be changed by configuration option:
-```.sh
-cmake -DCPU_BASELINE=SSE2 ../opencv
+cmake -G<generator> <configuration-options> <source-directory>
 ```
 
 @note
-Other platforms have their own instruction set levels: `VFPV3` and `NEON` on ARM, `VSX` on PowerPC.
+`cmake-gui` application allows to see and modify available options using graphical user interface.
 
-Some functions support dispatch mechanism allowing to compile them for several instruction sets and to choose one during runtime. List of enabled instruction sets can be changed during configuration:
-```.sh
-cmake -DCPU_DISPATCH=AVX,AVX2 ../opencv
+
+## Step 3: Build {#tutorial_general_install_sources_3}
+
+During build process source files are compiled to object files which are linked together or otherwise combined to libraries and applications, other related actions are performed depending on build configuration. This step can be run by universal command:
 ```
-To disable dispatch mechanism this option should be set to an empty value:
-```.sh
-cmake -DCPU_DISPATCH= ../opencv
+cmake --build <build-directory> <build-options>
+```
+... or by calling actual build system directly:
+```
+make
+```
+
+## Step 3: Install {#tutorial_general_install_sources_4}
+
+Installation process copies build results and other files from build directory to install location. Default installation root location is `/usr/local` on UNIX and `C:/Program Files` on Windows. This location can be changed on the configuration step by setting `CMAKE_INSTALL_PREFIX` option. To perform installation run the following command:
+```
+cmake --build <build-directory> --target install <other-options>
 ```
 
 @note
-More details on CPU optimization options can be found in wiki: https://github.com/opencv/opencv/wiki/CPU-optimizations-build-options
-
-### Build documentation
-
-Documentation can be built using the [Doxygen](http://www.doxygen.org/index.html) tool:
-```.sh
-sudo apt install doxygen
-```
-It should be enabled with configuration option:
-```.sh
-cmake -DBUILD_DOCS=ON ../opencv
-```
-More information about documentation building and writing can be found in @ref tutorial_documentation tutorial.
-
-Functional features and dependencies
-------------------------------------
-
-There are many optional dependencies and features that can be turned on or off. _cmake_ has special option allowing to print all available configuration parameters:
-```.sh
-cmake -LH ../opencv
-```
-
-In this section we will cover most popular features available on Linux.
-
-### Heterogeneous computation
-
-|      Option     |   Description  |  Requirements  |
-| :-------------- | :------------- | :------------- |
-| `WITH_CUDA`     | enable [CUDA](https://en.wikipedia.org/wiki/CUDA) support. Implemented as separate modules located in opencv_contrib repository since version 4. | CUDA toolkit must be installed from the official NVIDIA site.
-| `WITH_OPENCL`   | enable [OpenCL](https://en.wikipedia.org/wiki/OpenCL) support. Implemented in same modules as CPU. |  No additional dependencies required. |
-
-### Image reading and writing (_imgcodecs_ module)
-|      Option     |   Description  |  Requirements  |
-| :-------------- | :------------- | :------------- |
-| `WITH_PNG`      | enable PNG reading and writing | `libpng-dev` |
-| `WITH_JPEG`     | enable JPEG reading and writing | `libjpeg-dev` or `libjpeg-turbo8-dev` |
-| `WITH_TIFF`     | enable TIFF reading and writing | `libtiff-dev` |
-| `WITH_WEBP`     | enable WebP images reading and writing | `libwebp-dev` |
-| `WITH_GDAL`     | enable [GDAL](https://en.wikipedia.org/wiki/GDAL) backend (Geospatial Data Abstraction Library) | `libgdal-dev` |
-| `WITH_GDCM`     | enable [DICOM](https://en.wikipedia.org/wiki/DICOM) medical images support via [GDCM  library](https://en.wikipedia.org/wiki/GDCM) | `libgdcm2-dev` |
-
-### Video reading and writing (_videoio_ module)
-
-|      Option     |   Description  |  Requirements  |
-| :-------------- | :------------- | :------------- |
-| `WITH_V4L`      | enable [Video4Linux](https://en.wikipedia.org/wiki/Video4Linux) backend for capturing frames from cameras | Linux kernel headers must be installed: `linux-kernel-headers` |
-| `WITH_FFMPEG`   | enable [FFmpeg](https://en.wikipedia.org/wiki/FFmpeg) backend for decoding and encoding video files and network streams. This library can read and write many popular video formats | `libavcodec-dev libavformat-dev libswresample-dev libavutil-dev` |
-| `WITH_GSTREAMER`| enable [GStreamer](https://en.wikipedia.org/wiki/GStreamer) backend for decoding and encoding video files, capturing frames from cameras and network streams. Numerous plugins should be installed to extend supported formats list. OpenCV allows running arbitrary pipelines provided as strings | `libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev` |
-
-### Parallel execution (_core_ module)
-
-By default OpenCV uses _pthreads_ parallel backend, but it can be changed with following options:
-
-|      Option     |   Description  |  Requirements  |
-| :-------------- | :------------- | :------------- |
-| `WITH_TBB`      | enable [TBB](https://en.wikipedia.org/wiki/Threading_Building_Blocks) parallel backend |  `libtbb-dev` |
-| `WITH_OPENMP`   | enable [OpenMP](https://en.wikipedia.org/wiki/OpenMP) parallel backend | must be supported by compiler |
-
-### Window backend (_highgui_ module)
-
-|      Option     |   Description  |  Requirements  |
-| :-------------- | :------------- | :------------- |
-| `WITH_GTK`      | enable GTK window backend | |
-| `WITH_QT`       | enable Qt window backend | |
+On UNIX, if the installation root location is a protected system directory, run the installation process as superuser (e.g. `sudo cmake ...`).
