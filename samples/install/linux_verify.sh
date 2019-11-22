@@ -1,4 +1,6 @@
 #!/bin/bash
+# This script verifies that all shell snippets in
+# Linux installation tutorial work (in Ubuntu 18 container)
 set -e
 set -x
 

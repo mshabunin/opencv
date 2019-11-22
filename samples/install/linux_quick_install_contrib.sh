@@ -7,6 +7,7 @@ sudo()
 }
 fi
 
+# [body]
 # Install minimal prerequisites (Ubuntu 18.04 as reference)
 sudo apt update && sudo apt install -y cmake g++ wget unzip
 
@@ -24,3 +25,4 @@ cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-master/modules ../opencv-mas
 
 # Build
 cmake --build .
+# [body]

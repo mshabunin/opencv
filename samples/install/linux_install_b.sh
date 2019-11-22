@@ -14,7 +14,7 @@ sudo apt install -y clang
 # [clang]
 
 # [ninja]
-sudo apt install -y ninja
+sudo apt install -y ninja-build
 # [ninja]
 
 # [cmake]
