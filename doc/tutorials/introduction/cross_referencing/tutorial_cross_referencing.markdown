@@ -3,7 +3,6 @@ Cross referencing OpenCV from other Doxygen projects {#tutorial_cross_referencin
 
 @prev_tutorial{tutorial_transition_guide}
 
-
 @warning
 This tutorial can contain obsolete information.
 
