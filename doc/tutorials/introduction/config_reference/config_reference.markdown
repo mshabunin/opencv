@@ -33,7 +33,7 @@ cmake -LH
 cmake -LA
 ```
 
-Most popular are options starting with `WITH_`, `ENABLE_`, `BUILD_`, `OPENCV_`.
+Most popular and useful are options starting with `WITH_`, `ENABLE_`, `BUILD_`, `OPENCV_`.
 
 Default values vary depending on platform and other options values.
 
@@ -80,6 +80,12 @@ cmake --build . --config Debug
 
 @see https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
 
+Other options which can be useful for debugging
+`BUILD_WITH_DEBUG_INFO`
+`ENABLE_GNU_STL_DEBUG`
+`CV_DISABLE_OPTIMIZATION`
+
+
 ## Static build {#tutorial_config_reference_general_static}
 
 `BUILD_SHARED_LIBS` option control whether to produce dynamic (.dll, .so, .dylib) or static (.a, .lib) libraries.
@@ -92,6 +98,8 @@ cmake -DBUILD_SHARED_LIBS=OFF ../opencv
 @see https://en.wikipedia.org/wiki/Static_library
 
 
+`ENABLE_PIC` (CMAKE_POSITION_INDEPENDENT_CODE)
+
 ## Generate pkg-config info
 
 `OPENCV_GENERATE_PKGCONFIG` option enables `.pc` file generation along with standard CMake package. This file can be useful for projects which do not use CMake for build.
@@ -102,12 +110,12 @@ cmake -DOPENCV_GENERATE_PKGCONFIG=ON ../opencv
 ```
 
 @note
-Due to configuration complexity resulting `.pc` file can contain incomplete list of third-party dependencies and may not work in some configurations, especially for static builds. This feature is not officially supported since 4.x version and is disabled by default.
+Due to complexity of configuration process resulting `.pc` file can contain incomplete list of third-party dependencies and may not work in some configurations, especially for static builds. This feature is not officially supported since 4.x version and is disabled by default.
 
 
 ## Build tests, samples and applications {#tutorial_config_reference_general_tests}
 
-There are two kinds of tests: accuracy (`opencv_test_*`) and performance (`opencv_perf_*`).Tests and applications are enabled by default. Examples are not being built by default and should be enabled explicitly.
+There are two kinds of tests: accuracy (`opencv_test_*`) and performance (`opencv_perf_*`). Tests and applications are enabled by default. Examples are not being built by default and should be enabled explicitly.
 
 Corresponding _cmake_ options:
 ```.sh
@@ -118,6 +126,7 @@ cmake \
   -DBUILD_opencv_apps=ON \
   ../opencv
 ```
+
 
 ## Build limited set of modules {#tutorial_config_reference_general_modules}
 
@@ -135,6 +144,7 @@ In this example we requested 3 modules and configuration script has determined a
 --   OpenCV modules:
 --     To be built:                 calib3d core features2d flann highgui imgcodecs imgproc ts videoio
 ```
+
 
 ## Downloaded dependencies {#tutorial_config_reference_general_download}
 
@@ -173,6 +183,9 @@ To disable dispatch mechanism this option should be set to an empty value:
 ```.sh
 cmake -DCPU_DISPATCH= ../opencv
 ```
+
+`CV_ENABLE_INTRINSICS`
+`CV_DISABLE_OPTIMIZATION`
 
 @note
 More details on CPU optimization options can be found in wiki: https://github.com/opencv/opencv/wiki/CPU-optimizations-build-options
@@ -242,11 +255,85 @@ By default OpenCV uses _pthreads_ parallel backend, but it can be changed with f
 
 
 
-# Installation layout
+`WITH_1394`
+`WITH_AVFOUNDATION`
+`WITH_CAP_IOS`
+`WITH_CAROTENE`
+`WITH_CPUFEATURES`
+`WITH_VTK`
+`WITH_CUDA`
+`WITH_CUFFT`
+`WITH_CUBLAS`
+`WITH_CUDNN`
+`WITH_NVCUVID`
+`WITH_EIGEN`
+`WITH_FFMPEG`
+`WITH_GSTREAMER`
+`WITH_GTK`
+`WITH_GTK_2_X`
+`WITH_IPP`
+`WITH_HALIDE`
+`WITH_VULKAN`
+`WITH_INF_ENGINE`
+`WITH_JASPER`
+`WITH_JPEG`
+`WITH_WEBP`
+`WITH_OPENEXR`
+`WITH_OPENGL`
+`WITH_OPENVX`
+`WITH_OPENNI`
+`WITH_OPENNI2`
+`WITH_PNG`
+`WITH_GDCM`
+`WITH_PVAPI`
+`WITH_ARAVIS`
+`WITH_QT`
+`WITH_WIN32UI`
+`WITH_TBB`
+`WITH_HPX`
+`WITH_OPENMP`
+`WITH_PTHREADS_PF`
+`WITH_TIFF`
+`WITH_V4L`
+`WITH_DSHOW`
+`WITH_MSMF`
+`WITH_MSMF_DXVA`
+`WITH_XIMEA`
+`WITH_XINE`
+`WITH_CLP`
+`WITH_OPENCL`
+`WITH_OPENCL_SVM`
+`WITH_OPENCLAMDFFT`
+`WITH_OPENCLAMDBLAS`
+`WITH_DIRECTX`
+`WITH_OPENCL_D3D11_NV`
+`WITH_LIBREALSENSE`
+`WITH_VA`
+`WITH_VA_INTEL`
+`WITH_MFX`
+`WITH_GDAL`
+`WITH_GPHOTO2`
+`WITH_LAPACK`
+`WITH_ITT`
+`WITH_PROTOBUF`
+`WITH_IMGCODEC_HDR`
+`WITH_IMGCODEC_SUNRASTER`
+`WITH_IMGCODEC_PXM`
+`WITH_IMGCODEC_PFM`
+`WITH_QUIRC`
+`WITH_ANDROID_MEDIANDK`
 
-**TBD**
 
-## Installation root {#tutorial_config_reference_general_install}
+# Installation layout {#tutorial_config_reference_install}
+
+`INSTALL_CREATE_DISTRIB`
+`INSTALL_C_EXAMPLES`
+`INSTALL_PYTHON_EXAMPLES`
+`INSTALL_ANDROID_EXAMPLES`
+`INSTALL_TO_MANGLED_PATHS`
+`INSTALL_TESTS`
+
+## Installation root {#tutorial_config_reference_install_root}
 
 To install produced binaries root location should be configured. Default value depends on distribution, in Ubuntu it is usually set to `/usr/local`. It can be changed during configuration:
 ```.sh
@@ -273,6 +360,91 @@ On some platforms (Linux) it is possible to remove symbol information during ins
 cmake --build . --target install/strip
 ```
 
-## Component locations
+
+## Component locations {#tutorial_config_reference_install_comp}
 
 **TBD**
+
+
+# Miscellaneous features {#tutorial_config_reference_misc}
+
+
+## Non-free (patented) algorithms {#tutorial_config_reference_misc_nonfree}
+
+`OPENCV_ENABLE_NONFREE`
+
+
+## Building own 3rdparty libraries
+
+`OPENCV_FORCE_3RDPARTY_BUILD`
+`BUILD_ZLIB`
+`BUILD_TIFF`
+`BUILD_JASPER`
+`BUILD_JPEG`
+`BUILD_PNG`
+`BUILD_OPENEXR`
+`BUILD_WEBP`
+`BUILD_TBB`
+`BUILD_IPP_IW`
+`BUILD_ITT`
+
+
+## CCache and PCH
+
+`ENABLE_CCACHE`
+`ENABLE_PRECOMPILED_HEADERS`
+
+
+## Python/Java
+
+`ENABLE_PYLINT`
+`ENABLE_FLAKE8`
+`BUILD_opencv_python2`
+`BUILD_opencv_python3`
+`BUILD_JAVA`
+`BUILD_FAT_JAVA_LIB`
+
+@see @ref tutorial_py_table_of_contents_setup
+
+
+## Profiling, coverage, sanitize, hardening
+
+`ENABLE_PROFILING`
+`ENABLE_COVERAGE`
+`OPENCV_ENABLE_MEMORY_SANITIZER`
+`ENABLE_BUILD_HARDENING`
+
+
+## Size optimization
+
+`ENABLE_LTO`
+`ENABLE_THIN_LTO`
+
+
+## OpenCV.js
+
+@see @ref tutorial_js_table_of_contents_setup
+
+
+## Android
+
+`BUILD_ANDROID_PROJECTS`
+`BUILD_ANDROID_EXAMPLES`
+`ANDROID_HOME`
+`ANDROID_SDK`
+`ANDROID_NDK`
+`ANDROID_SDK_ROOT`
+
+
+## Cross-compilation
+
+CMAKE_TOOLCHAIN_FILE
+
+
+## Automated builds
+
+`ENABLE_NOISY_WARNINGS`
+`OPENCV_WARNINGS_ARE_ERRORS`
+`ENABLE_CONFIG_VERIFICATION`
+`OPENCV_CMAKE_HOOKS_DIR`
+`OPENCV_DUMP_HOOKS_FLOW`
