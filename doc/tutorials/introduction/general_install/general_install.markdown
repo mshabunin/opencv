@@ -3,9 +3,11 @@ OpenCV installation overview {#tutorial_general_install}
 
 @tableofcontents
 
+There are two ways of installing OpenCV on your machine: download prebuilt version for your platform or compile from sources.
+
 # Prebuilt version {#tutorial_general_install_prebuilt}
 
-In most cases there can be found prebuilt version of OpenCV that will meet your needs.
+In many cases one can find prebuilt version of OpenCV that will meet their needs.
 
 ## Packages by OpenCV core team  {#tutorial_general_install_prebuilt_core}
 
@@ -31,14 +33,14 @@ Other organizations and people maintain their own distributions of OpenCV. Some 
 
 # Build from sources {#tutorial_general_install_sources}
 
-In some cases existing binary packages do not fit your use case, then you'll have to build custom version of OpenCV by yourself. This section contains high-level overview of build and installation process. Check tutorial corresponding to your platform for actual build instructions.
+In some cases existing binary packages are not applicable for your use case, then you'll have to build custom version of OpenCV by yourself. This section contains high-level overview of build and installation process. Check tutorial specific for your platform for actual build instructions.
 
 OpenCV uses [CMake](https://cmake.org/) build management system for configuration and build, so this section just describes generalized process of building software with CMake.
 
 
 ## Step 0: Prepare the system {#tutorial_general_install_sources_0}
 
-Install C++ compiler and build tools. On \*NIX platforms it is usually G++ or Clang compiler and Make or Ninja build tool. On Windows it can be Visual Studio IDE or MinGW-w64 compiler. Native toolchains for Android are provided in Android NDK. XCode is used to build software for OSX and iOS.
+Install C++ compiler and build tools. On \*NIX platforms it is usually GCC/G++ or Clang compiler and Make or Ninja build tool. On Windows it can be Visual Studio IDE or MinGW-w64 compiler. Native toolchains for Android are provided in Android NDK. XCode is used to build software for OSX and iOS.
 
 Install CMake from official site, your Linux distribution repository or any other sources.
 
@@ -69,7 +71,7 @@ git -C opencv_contrib checkout <same-tag-as-opencv>
 ```
 
 @note
-If you want to build software from more than one repository, make sure that they are compatible with each other. For OpenCV it means that _opencv_ and _opencv_contrib_ repositories must be checked out to the same tag and snapshot archives are downloaded from the same release.
+If you want to build software using more than one repository, make sure all components are compatible with each other. For OpenCV it means that _opencv_ and _opencv_contrib_ repositories must be checked out at the same tag or snapshot archives are downloaded from the same release.
 
 
 ## Step 2: Configure {#tutorial_general_install_sources_2}

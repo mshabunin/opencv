@@ -56,7 +56,7 @@ cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules/bgsegm ../opencv
 cmake -DOPENCV_EXTRA_MODULES_PATH=../my_mod1\;../my_mod2 ../opencv
 ```
 
-@warning
+@note
 Only 0- and 1-level deep module locations are supported, following command will raise an error:
 ```.sh
 cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib ../opencv
@@ -65,25 +65,30 @@ cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib ../opencv
 
 ## Debug build {#tutorial_config_reference_general_debug}
 
-`CMAKE_BUILD_TYPE` option can be used to enable debug build. It means that resulting binaries will contain debug symbols and all optimizations will be turned off. This is built-in CMake variable, but OpenCV supports only `Debug` and `Release` values.
+`CMAKE_BUILD_TYPE` option can be used to enable debug build; resulting binaries will contain debug symbols and most of compiler optimizations will be turned off. To enable debug symbols in Release build turn the `BUILD_WITH_DEBUG_INFO` option on.
 
-On some platforms (e.g. Linux) this option should be enabled during configuration stage, because build directory can contain only one configuration:
+On some platforms (e.g. Linux) build type must be set at configuration stage:
 ```.sh
 cmake -DCMAKE_BUILD_TYPE=Debug ../opencv
 cmake --build .
 ```
-Other platforms can switch between configurations during build step (e.g. Visual Studio, XCode):
-```.bat
+On other platforms different types of build can be produced in the same build directory (e.g. Visual Studio, XCode):
+```.sh
 cmake <options> ../opencv
 cmake --build . --config Debug
 ```
 
-@see https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
+If you use GNU libstdc++ (default for GCC) you can turn on the `ENABLE_GNU_STL_DEBUG` option, then C++ library will be used in Debug mode, e.g. indexes will be bound-checked during vector element access.
 
-Other options which can be useful for debugging
-`BUILD_WITH_DEBUG_INFO`
-`ENABLE_GNU_STL_DEBUG`
-`CV_DISABLE_OPTIMIZATION`
+Many kinds of optimizations can be disabled with :star:`CV_DISABLE_OPTIMIZATION` option:
+* Some third-party libraries (e.g. IPP, Lapack, Eigen)
+* Explicit vectorized implementation (universal intrinsics, raw intirinsics, etc.)
+* Dispatched optimizations
+* Explicit loop unrolling
+
+@see https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
+@see https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_macros.html
+@see https://github.com/opencv/opencv/wiki/CPU-optimizations-build-options
 
 
 ## Static build {#tutorial_config_reference_general_static}
