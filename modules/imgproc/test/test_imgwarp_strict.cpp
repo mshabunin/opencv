@@ -151,8 +151,6 @@ void CV_ImageWarpBaseTest::generate_test_data()
         depth = rng.uniform(0, CV_64F);
 
     int cn = rng.uniform(1, 4);
-    while (cn == 2)
-        cn = rng.uniform(1, 4);
 
     src.create(ssize, CV_MAKE_TYPE(depth, cn));
 
@@ -430,8 +428,6 @@ void CV_Resize_Test::generate_test_data()
         depth = rng.uniform(0, CV_64F);
 
     int cn = rng.uniform(1, 4);
-    while (cn == 2)
-        cn = rng.uniform(1, 4);
 
     src.create(ssize, CV_MAKE_TYPE(depth, cn));
 
