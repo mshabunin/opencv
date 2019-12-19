@@ -235,7 +235,7 @@ float CV_ImageWarpBaseTest::get_success_error_level(int _interpolation, int) con
     else if (_interpolation == INTER_LANCZOS4)
         return 1.0f;
     else if (_interpolation == INTER_NEAREST)
-        return 1.0f;
+        return 255.0f;  // FIXIT: check is not reliable for Black/White (0/255) images
     else if (_interpolation == INTER_AREA)
         return 2.0f;
     else
