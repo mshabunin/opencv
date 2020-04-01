@@ -21,11 +21,11 @@ Packages for Android, iOS and Windows built with default parameters and recent c
 
 Other organizations and people maintain their own distributions of OpenCV. Some examples can be found in following locations:
 
-- System packages in popular Linux distributions (https://pkgs.org/download/opencv)
+- System packages in popular Linux distributions (https://pkgs.org/search/?q=opencv)
 - PyPI (https://pypi.org/search/?q=opencv)
 - Conda (https://anaconda.org/search?q=opencv)
 - Conan (https://github.com/conan-community/conan-opencv)
-- Vcpkg (https://github.com/microsoft/vcpkg/tree/master/ports/opencv)
+- vcpkg (https://github.com/microsoft/vcpkg/tree/master/ports/opencv)
 - NuGet (https://www.nuget.org/packages?q=opencv)
 - Brew (https://formulae.brew.sh/formula/opencv)
 - Maven (https://search.maven.org/search?q=opencv)

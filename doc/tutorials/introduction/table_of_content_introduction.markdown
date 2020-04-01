@@ -1,8 +1,8 @@
 Introduction to OpenCV {#tutorial_table_of_content_introduction}
 ======================
 
-- @subpage tutorial_general_install - Overview of build and installation process
-- @subpage tutorial_config_reference - Configuration options reference
+- @subpage tutorial_general_install
+- @subpage tutorial_config_reference
 
 ##### Linux
 -   @subpage tutorial_linux_install
@@ -25,13 +25,6 @@ Introduction to OpenCV {#tutorial_table_of_content_introduction}
 
 ##### Other platforms
 -   @subpage tutorial_macos_install
-
-    _Compatibility:_ \> OpenCV 3.4.x
-
-    _Author:_ [\@sajarindider](https://github.com/sajarindider)
-
-    We will learn how to setup OpenCV in MacOS.
-
 -   @subpage tutorial_ios_install
 -   @subpage tutorial_arm_crosscompile_with_cmake
 -   @subpage tutorial_building_tegra_cuda
