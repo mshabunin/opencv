@@ -411,7 +411,12 @@ cvImageWidget_size_allocate (GtkWidget     *widget,
               image_widget->original_image->cols, image_widget->original_image->rows );
           if(image_widget->flags & CV_WINDOW_NO_IMAGE){
               image_widget->flags &= ~CV_WINDOW_NO_IMAGE;
+#if defined (GTK_VERSION3)
+              cvImageWidget_set_size( widget, allocation->width, allocation->height );
+              cvResize( image_widget->original_image, image_widget->scaled_image, CV_INTER_AREA );
+#else
               gtk_widget_queue_resize( GTK_WIDGET(widget) );
+#endif //GTK_VERSION3
           }
       }
       else{
