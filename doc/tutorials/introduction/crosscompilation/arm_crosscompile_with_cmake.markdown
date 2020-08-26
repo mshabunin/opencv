@@ -1,5 +1,4 @@
 Cross compilation for ARM based Linux systems {#tutorial_arm_crosscompile_with_cmake}
-Cross compilation for ARM based Linux systems {#tutorial_arm_crosscompile_with_cmake}
 =============================================
 
 @prev_tutorial{tutorial_ios_install}
