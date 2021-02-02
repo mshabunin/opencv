@@ -64,6 +64,25 @@ function(ocv_tbb_env_guess _found)
   find_library(TBB_ENV_LIB NAMES "tbb")
   find_library(TBB_ENV_LIB_DEBUG NAMES "tbb_debug" PATHS ENV LIBRARY_PATH NO_DEFAULT_PATH)
   find_library(TBB_ENV_LIB_DEBUG NAMES "tbb_debug")
+  find_library(TBB_ENV_LIB12 NAMES "tbb12" PATHS ENV LIBRARY_PATH NO_DEFAULT_PATH)
+  find_library(TBB_ENV_LIB12 NAMES "tbb12")
+  find_library(TBB_ENV_LIB12_DEBUG NAMES "tbb12_debug" PATHS ENV LIBRARY_PATH NO_DEFAULT_PATH)
+  find_library(TBB_ENV_LIB12_DEBUG NAMES "tbb12_debug")
+
+  # oneTBB
+  if(TBB_ENV_LIB12 OR TBB_ENV_LIB12_DEBUG)
+    add_library(tbb12 UNKNOWN IMPORTED)
+    set_target_properties(tbb12 PROPERTIES
+      IMPORTED_LOCATION "${TBB_ENV_LIB12}"
+      INTERFACE_INCLUDE_DIRECTORIES "${TBB_ENV_INCLUDE}"
+    )
+    if (TBB_ENV_LIB_DEBUG)
+      set_target_properties(tbb12 PROPERTIES
+        IMPORTED_LOCATION_DEBUG "${TBB_ENV_LIB12_DEBUG}"
+      )
+    endif()
+  endif()
+
   if (TBB_ENV_INCLUDE AND (TBB_ENV_LIB OR TBB_ENV_LIB_DEBUG))
     ocv_tbb_env_verify()
     add_library(tbb UNKNOWN IMPORTED)
@@ -75,6 +94,10 @@ function(ocv_tbb_env_guess _found)
       set_target_properties(tbb PROPERTIES
         IMPORTED_LOCATION_DEBUG "${TBB_ENV_LIB_DEBUG}"
       )
+    endif()
+    # oneTBB
+    if (TARGET tbb12)
+      set_target_properties(tbb PROPERTIES INTERFACE_LINK_LIBRARIES tbb12)
     endif()
     # workaround: system TBB library is used for linking instead of provided
     if(CV_GCC)
