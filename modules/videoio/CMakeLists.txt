@@ -24,6 +24,7 @@ set(videoio_srcs
     ${CMAKE_CURRENT_LIST_DIR}/src/videoio_c.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/cap.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/cap_images.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/name_pattern.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/cap_mjpeg_encoder.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/cap_mjpeg_decoder.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/container_avi.cpp
