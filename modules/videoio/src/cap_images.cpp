@@ -52,7 +52,7 @@
 #include "precomp.hpp"
 
 #include "opencv2/core/utils/filesystem.hpp"
-#include "name_pattern.hpp"
+#include "opencv2/videoio/name_pattern.private.hpp"
 
 #if 0
 #define CV_WARN(message)

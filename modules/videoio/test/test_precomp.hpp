@@ -7,6 +7,7 @@
 #include "opencv2/ts.hpp"
 #include "opencv2/videoio.hpp"
 #include "opencv2/videoio/registry.hpp"
+#include "opencv2/videoio/name_pattern.private.hpp"
 #include "opencv2/imgproc/imgproc_c.h"
 
 #include "opencv2/core/private.hpp"

@@ -1,4 +1,18 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
+#ifndef NAME_PATTERN_HPP
+#define NAME_PATTERN_HPP
+
+#ifndef __OPENCV_BUILD
+#  error this is a private header which should not be used from outside of the OpenCV library
+#endif
+
 #include <string>
+
+namespace cv
+{
 
 class NamePattern
 {
@@ -21,3 +35,7 @@ private:
     unsigned idx;
     bool valid;
 };
+
+} // cv::
+
+#endif // NAME_PATTERN_HPP

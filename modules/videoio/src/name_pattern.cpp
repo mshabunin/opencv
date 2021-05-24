@@ -1,5 +1,11 @@
-#include "name_pattern.hpp"
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
+#include "opencv2/videoio/name_pattern.private.hpp"
 #include "precomp.hpp"
+
+namespace cv {
 
 NamePattern::NamePattern()
     : offset(0), idx(0), valid(false)
@@ -126,3 +132,5 @@ bool NamePattern::initWithNumber(const std::string &filename)
     pattern = result;
     return true;
 }
+
+} // cv::
