@@ -47,6 +47,7 @@ class table(object):
         self.format = format
         self.is_markdown = self.format == 'markdown'
         self.is_tabs = self.format == 'tabs'
+        self.is_csv = self.format == 'csv'
         self.columns = {}
         self.rows = []
         self.ridx = -1;
@@ -262,9 +263,9 @@ class table(object):
 
     def consolePrintTable(self, out):
         columns = self.layoutTable()
-        colrizer = getColorizer(out) if not (self.is_markdown or self.is_tabs) else dummyColorizer(out)
+        colrizer = getColorizer(out) if not (self.is_markdown or self.is_tabs or self.is_csv) else dummyColorizer(out)
 
-        if self.caption:
+        if self.caption and not self.is_csv:
             out.write("%s%s%s" % ( os.linesep,  os.linesep.join(self.reformatTextValue(self.caption)), os.linesep * 2))
 
         headerRow = tblRow(len(columns), {"align": "center", "valign": "top", "bold": True, "header": True})
@@ -311,6 +312,10 @@ class table(object):
         elif self.is_tabs:
             cols_to_join=[' '.join(self.getValue('text', c) or []) for c in row.cells]
             out.write('\t'.join(cols_to_join))
+            out.write(os.linesep)
+        elif self.is_csv:
+            cols_to_join = [' '.join(self.getValue('text', c) or []) for c in row.cells]
+            out.write(';'.join(cols_to_join))
             out.write(os.linesep)
         else:
             for ln in range(row.minheight):
