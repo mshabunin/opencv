@@ -1329,8 +1329,8 @@ TEST_P(Test_Int8_nets, YOLOv4_tiny)
     };
     Mat ref(N0 + N1, 7, CV_32FC1, (void*)ref_);
 
-    std::string config_file = "yolov4-tiny.cfg";
-    std::string weights_file = "yolov4-tiny.weights";
+    std::string config_file = "yolov4-tiny-2022-12.cfg";
+    std::string weights_file = "yolov4-tiny-2022-12.weights";
     double scoreDiff = 0.12;
     double iouDiff = target == DNN_TARGET_OPENCL_FP16 ? 0.2 : 0.082;
 
