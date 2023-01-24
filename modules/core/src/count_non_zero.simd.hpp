@@ -32,7 +32,7 @@ static int countNonZero_(const T* src, int len )
 static int countNonZero8u( const uchar* src, int len )
 {
     int i=0, nz = 0;
-#if CV_SIMD
+#if 0
     int len0 = len & -v_uint8::nlanes;
     v_uint8 v_zero = vx_setzero_u8();
     v_uint8 v_one = vx_setall_u8(1);
@@ -69,7 +69,7 @@ static int countNonZero8u( const uchar* src, int len )
 static int countNonZero16u( const ushort* src, int len )
 {
     int i = 0, nz = 0;
-#if CV_SIMD
+#if 0
     int len0 = len & -v_int8::nlanes;
     v_uint16 v_zero = vx_setzero_u16();
     v_int8 v_one = vx_setall_s8(1);
@@ -104,7 +104,7 @@ static int countNonZero16u( const ushort* src, int len )
 static int countNonZero32s( const int* src, int len )
 {
     int i = 0, nz = 0;
-#if CV_SIMD
+#if 0
     int len0 = len & -v_int8::nlanes;
     v_int32 v_zero = vx_setzero_s32();
     v_int8 v_one = vx_setall_s8(1);
@@ -142,7 +142,7 @@ static int countNonZero32s( const int* src, int len )
 static int countNonZero32f( const float* src, int len )
 {
     int i = 0, nz = 0;
-#if CV_SIMD
+#if 0
     int len0 = len & -v_int8::nlanes;
     v_float32 v_zero = vx_setzero_f32();
     v_int8 v_one = vx_setall_s8(1);

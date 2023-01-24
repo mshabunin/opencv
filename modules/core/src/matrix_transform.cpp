@@ -493,14 +493,14 @@ flipHoriz( const uchar* src, size_t sstep, uchar* dst, size_t dstep, Size size, 
             }
         }
     }
-    else if (esz == 8
-#if CV_STRONG_ALIGNMENT
-            && isAligned<sizeof(uint64)>(alignmentMark)
-#endif
-    )
-    {
-        flipHoriz_single<v_uint64x2>(src, sstep, dst, dstep, size, esz);
-    }
+//     else if (esz == 8
+// #if CV_STRONG_ALIGNMENT
+//             && isAligned<sizeof(uint64)>(alignmentMark)
+// #endif
+//     )
+//     {
+//         flipHoriz_single<v_uint64x2>(src, sstep, dst, dstep, size, esz);
+//     }
     else if (esz == 4
 #if CV_STRONG_ALIGNMENT
             && isAligned<sizeof(unsigned)>(alignmentMark)
@@ -521,33 +521,33 @@ flipHoriz( const uchar* src, size_t sstep, uchar* dst, size_t dstep, Size size, 
     {
         flipHoriz_single<v_uint8x16>(src, sstep, dst, dstep, size, esz);
     }
-    else if (esz == 24
-#if CV_STRONG_ALIGNMENT
-            && isAligned<sizeof(uint64_t)>(alignmentMark)
-#endif
-    )
-    {
-        int end = (int)(size.width*esz);
-        int width = (end + 1)/2;
+//     else if (esz == 24
+// #if CV_STRONG_ALIGNMENT
+//             && isAligned<sizeof(uint64_t)>(alignmentMark)
+// #endif
+//     )
+//     {
+//         int end = (int)(size.width*esz);
+//         int width = (end + 1)/2;
 
-        for( ; size.height--; src += sstep, dst += dstep )
-        {
-            for ( int i = 0, j = end; i < width; i += v_uint8x16::nlanes + sizeof(uint64_t), j -= v_uint8x16::nlanes + sizeof(uint64_t) )
-            {
-                v_uint8x16 t0, t1;
-                uint64_t t2, t3;
+//         for( ; size.height--; src += sstep, dst += dstep )
+//         {
+//             for ( int i = 0, j = end; i < width; i += v_uint8x16::nlanes + sizeof(uint64_t), j -= v_uint8x16::nlanes + sizeof(uint64_t) )
+//             {
+//                 v_uint8x16 t0, t1;
+//                 uint64_t t2, t3;
 
-                t0 = v_load((uchar*)src + i);
-                t2 = *((uint64_t*)((uchar*)src + i + v_uint8x16::nlanes));
-                t1 = v_load((uchar*)src + j - v_uint8x16::nlanes - sizeof(uint64_t));
-                t3 = *((uint64_t*)((uchar*)src + j - sizeof(uint64_t)));
-                v_store(dst + j - v_uint8x16::nlanes - sizeof(uint64_t), t0);
-                *((uint64_t*)(dst + j - sizeof(uint64_t))) = t2;
-                v_store(dst + i, t1);
-                *((uint64_t*)(dst + i + v_uint8x16::nlanes)) = t3;
-            }
-        }
-    }
+//                 t0 = v_load((uchar*)src + i);
+//                 t2 = *((uint64_t*)((uchar*)src + i + v_uint8x16::nlanes));
+//                 t1 = v_load((uchar*)src + j - v_uint8x16::nlanes - sizeof(uint64_t));
+//                 t3 = *((uint64_t*)((uchar*)src + j - sizeof(uint64_t)));
+//                 v_store(dst + j - v_uint8x16::nlanes - sizeof(uint64_t), t0);
+//                 *((uint64_t*)(dst + j - sizeof(uint64_t))) = t2;
+//                 v_store(dst + i, t1);
+//                 *((uint64_t*)(dst + i + v_uint8x16::nlanes)) = t3;
+//             }
+//         }
+//     }
 #if !CV_STRONG_ALIGNMENT
     else if (esz == 12)
     {

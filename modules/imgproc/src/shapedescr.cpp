@@ -879,7 +879,7 @@ static Rect pointSetBoundingRect( const Mat& points )
     if( npoints == 0 )
         return Rect();
 
-#if CV_SIMD
+#if 0
     const int64_t* pts = points.ptr<int64_t>();
 
     if( !is_float )

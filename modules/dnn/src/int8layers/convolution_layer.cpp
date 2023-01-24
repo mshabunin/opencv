@@ -1244,7 +1244,7 @@ public:
                                 mult1 = mult0;
                             }
                             int j = 0;
-                        #if CV_SIMD128
+                        #if 0
                             v_int32x4 voutzp = v_setall_s32(outZp), outmin = v_setall_s32(-128), outmax = v_setall_s32(127);
                             v_float32x4 vmult0 = v_setall_f32(mult0), vmult1 = v_setall_f32(mult1);
                             for( ; j <= bsz - 4; j += 4 )

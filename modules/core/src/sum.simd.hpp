@@ -22,7 +22,7 @@ struct Sum_SIMD
     }
 };
 
-#if CV_SIMD
+#if 0
 
 template <>
 struct Sum_SIMD<uchar, int>

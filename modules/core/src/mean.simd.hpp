@@ -24,7 +24,7 @@ struct SumSqr_SIMD
     }
 };
 
-#if CV_SIMD
+#if 0
 
 template <>
 struct SumSqr_SIMD<uchar, int, int>

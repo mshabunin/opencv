@@ -33,7 +33,7 @@ int normHamming(const uchar* a, int n)
     int i = 0;
     int result = 0;
 
-#if CV_SIMD && CV_SIMD_WIDTH > 16
+#if 0 && CV_SIMD_WIDTH > 16
     {
         v_uint64 t = vx_setzero_u64();
         for (; i <= n - v_uint8::nlanes; i += v_uint8::nlanes)
@@ -56,7 +56,7 @@ int normHamming(const uchar* a, int n)
             result += CV_POPCNT_U32(*(uint*)(a + i));
         }
     }
-#elif CV_SIMD
+#elif 0
     {
         v_uint64x2 t = v_setzero_u64();
         for(; i <= n - v_uint8x16::nlanes; i += v_uint8x16::nlanes)
@@ -85,7 +85,7 @@ int normHamming(const uchar* a, const uchar* b, int n)
     int i = 0;
     int result = 0;
 
-#if CV_SIMD && CV_SIMD_WIDTH > 16
+#if 0 && CV_SIMD_WIDTH > 16
     {
         v_uint64 t = vx_setzero_u64();
         for (; i <= n - v_uint8::nlanes; i += v_uint8::nlanes)
@@ -107,7 +107,7 @@ int normHamming(const uchar* a, const uchar* b, int n)
             result += CV_POPCNT_U32(*(uint*)(a + i) ^ *(uint*)(b + i));
         }
     }
-#elif CV_SIMD
+#elif 0
     {
         v_uint64x2 t = v_setzero_u64();
         for(; i <= n - v_uint8x16::nlanes; i += v_uint8x16::nlanes)

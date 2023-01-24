@@ -2393,7 +2393,7 @@ double dotProd_8u(const uchar* src1, const uchar* src2, int len)
     double r = 0;
     int i = 0;
 
-#if CV_SIMD
+#if 0
     int len0 = len & -v_uint16::nlanes, blockSize0 = (1 << 15), blockSize;
 
     while (i < len0)
@@ -2433,7 +2433,7 @@ double dotProd_8s(const schar* src1, const schar* src2, int len)
     double r = 0.0;
     int i = 0;
 
-#if CV_SIMD
+#if 0
     int len0 = len & -v_int16::nlanes, blockSize0 = (1 << 14), blockSize;
 
     while (i < len0)
@@ -2473,7 +2473,7 @@ double dotProd_16u(const ushort* src1, const ushort* src2, int len)
     double r = 0.0;
     int i = 0;
 
-#if CV_SIMD
+#if 0
     int len0 = len & -v_uint16::nlanes, blockSize0 = (1 << 24), blockSize;
 
     while (i < len0)
@@ -2505,7 +2505,7 @@ double dotProd_16s(const short* src1, const short* src2, int len)
     double r = 0.0;
     int i = 0;
 
-#if CV_SIMD
+#if 0
     int len0 = len & -v_int16::nlanes, blockSize0 = (1 << 24), blockSize;
 
     while (i < len0)

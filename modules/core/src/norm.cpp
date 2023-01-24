@@ -63,7 +63,7 @@ int normHamming(const uchar* a, int n, int cellSize)
         return -1;
     int i = 0;
     int result = 0;
-#if CV_SIMD
+#if 0
     v_uint64 t = vx_setzero_u64();
     if ( cellSize == 2)
     {
@@ -109,7 +109,7 @@ int normHamming(const uchar* a, const uchar* b, int n, int cellSize)
         return -1;
     int i = 0;
     int result = 0;
-#if CV_SIMD
+#if 0
     v_uint64 t = vx_setzero_u64();
     if ( cellSize == 2)
     {

@@ -108,7 +108,7 @@ cvt_( const _Ts* src, size_t sstep, _Td* dst, size_t dstep, Size size )
     for( int i = 0; i < size.height; i++, src += sstep, dst += dstep )
     {
         int j = 0;
-#if CV_SIMD
+#if 0
         const int VECSZ = _Twvec::nlanes*2;
         for( ; j < size.width; j += VECSZ )
         {
@@ -139,7 +139,7 @@ cvt1_( const _Ts* src, size_t sstep, _Td* dst, size_t dstep, Size size )
     for( int i = 0; i < size.height; i++, src += sstep, dst += dstep )
     {
         int j = 0;
-#if CV_SIMD
+#if 0
         const int VECSZ = _Twvec::nlanes;
         for( ; j < size.width; j += VECSZ )
         {
