@@ -1989,6 +1989,22 @@ TEST(Core_InputArray, fetch_MatExpr)
     EXPECT_EQ(dst.size(), result.size());
 }
 
+TEST(Core_Mat, XYZ_1)
+{
+    cv::Mat matrix(2, 3, CV_32FC1);
+    cv::MatExpr expr = matrix.mul(1);
+    cv::Mat mat(expr); // build with asan, crash : stack-use-after-scope
+    EXPECT_FALSE(mat.empty());
+}
+
+TEST(Core_Mat, XYZ_2)
+{
+    cv::Mat matrix(2, 3, CV_32FC1);
+    auto ret = matrix.mul(1); // writing this way can easily happen
+    cv::Mat mat(ret); // build with asan, run crash : stack-use-after-scope
+    EXPECT_FALSE(mat.empty());
+}
+
 
 #ifdef CV_CXX11
 class TestInputArrayRangeChecking {

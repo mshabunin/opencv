@@ -228,8 +228,8 @@ void MatOp::roi(const MatExpr& expr, const Range& rowRange, const Range& colRang
 {
     if( elementWise(expr) )
     {
-        e = MatExpr(expr.op, expr.flags, Mat(), Mat(), Mat(),
-                    expr.alpha, expr.beta, expr.s);
+        assignExpr(e, MatExpr(expr.op, expr.flags, Mat(), Mat(), Mat(),
+                    expr.alpha, expr.beta, expr.s));
         if(expr.a.data)
             e.a = expr.a(rowRange, colRange);
         if(expr.b.data)
@@ -241,7 +241,7 @@ void MatOp::roi(const MatExpr& expr, const Range& rowRange, const Range& colRang
     {
         Mat m;
         expr.op->assign(expr, m);
-        e = MatExpr(&g_MatOp_Identity, 0, m(rowRange, colRange), Mat(), Mat());
+        assignExpr(e, MatExpr(&g_MatOp_Identity, 0, m(rowRange, colRange), Mat(), Mat()));
     }
 }
 
@@ -249,8 +249,8 @@ void MatOp::diag(const MatExpr& expr, int d, MatExpr& e) const
 {
     if( elementWise(expr) )
     {
-        e = MatExpr(expr.op, expr.flags, Mat(), Mat(), Mat(),
-                    expr.alpha, expr.beta, expr.s);
+        assignExpr(e, MatExpr(expr.op, expr.flags, Mat(), Mat(), Mat(),
+                    expr.alpha, expr.beta, expr.s));
         if(expr.a.data)
             e.a = expr.a.diag(d);
         if(expr.b.data)
@@ -262,7 +262,7 @@ void MatOp::diag(const MatExpr& expr, int d, MatExpr& e) const
     {
         Mat m;
         expr.op->assign(expr, m);
-        e = MatExpr(&g_MatOp_Identity, 0, m.diag(d), Mat(), Mat());
+        assignExpr(e, MatExpr(&g_MatOp_Identity, 0, m.diag(d), Mat(), Mat()));
     }
 }
 
@@ -605,6 +605,11 @@ int MatOp::type(const MatExpr& expr) const
     CV_INSTRUMENT_REGION();
 
     return !expr.a.empty() ? expr.a.type() : expr.b.empty() ? expr.b.type() : expr.c.type();
+}
+
+void MatOp::assignExpr(MatExpr & dst, const MatExpr & other)
+{
+    dst.assign(other);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1285,7 +1290,7 @@ void MatOp_Identity::assign(const MatExpr& e, Mat& m, int _type) const
 
 inline void MatOp_Identity::makeExpr(MatExpr& res, const Mat& m)
 {
-    res = MatExpr(&g_MatOp_Identity, 0, m, Mat(), Mat(), 1, 0);
+    assignExpr(res, MatExpr(&g_MatOp_Identity, 0, m, Mat(), Mat(), 1, 0));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1354,7 +1359,7 @@ void MatOp_AddEx::add(const MatExpr& e, const Scalar& s, MatExpr& res) const
 {
     CV_INSTRUMENT_REGION();
 
-    res = e;
+    assignExpr(res, e);;
     res.s += s;
 }
 
@@ -1363,7 +1368,7 @@ void MatOp_AddEx::subtract(const Scalar& s, const MatExpr& e, MatExpr& res) cons
 {
     CV_INSTRUMENT_REGION();
 
-    res = e;
+    assignExpr(res, e);;
     res.alpha = -res.alpha;
     res.beta = -res.beta;
     res.s = s - res.s;
@@ -1373,7 +1378,7 @@ void MatOp_AddEx::multiply(const MatExpr& e, double s, MatExpr& res) const
 {
     CV_INSTRUMENT_REGION();
 
-    res = e;
+    assignExpr(res, e);;
     res.alpha *= s;
     res.beta *= s;
     res.s *= s;
@@ -1414,7 +1419,7 @@ void MatOp_AddEx::abs(const MatExpr& e, MatExpr& res) const
 
 inline void MatOp_AddEx::makeExpr(MatExpr& res, const Mat& a, const Mat& b, double alpha, double beta, const Scalar& s)
 {
-    res = MatExpr(&g_MatOp_AddEx, 0, a, b, Mat(), alpha, beta, s);
+    assignExpr(res, MatExpr(&g_MatOp_AddEx, 0, a, b, Mat(), alpha, beta, s));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1468,7 +1473,7 @@ void MatOp_Bin::multiply(const MatExpr& e, double s, MatExpr& res) const
 
     if( e.flags == '*' || e.flags == '/' )
     {
-        res = e;
+        assignExpr(res, e);
         res.alpha *= s;
     }
     else
@@ -1487,12 +1492,12 @@ void MatOp_Bin::divide(double s, const MatExpr& e, MatExpr& res) const
 
 inline void MatOp_Bin::makeExpr(MatExpr& res, char op, const Mat& a, const Mat& b, double scale)
 {
-    res = MatExpr(&g_MatOp_Bin, op, a, b, Mat(), scale, b.data ? 1 : 0);
+    assignExpr(res, MatExpr(&g_MatOp_Bin, op, a, b, Mat(), scale, b.data ? 1 : 0));
 }
 
 inline void MatOp_Bin::makeExpr(MatExpr& res, char op, const Mat& a, const Scalar& s)
 {
-    res = MatExpr(&g_MatOp_Bin, op, a, Mat(), Mat(), 1, 0, s);
+    assignExpr(res, MatExpr(&g_MatOp_Bin, op, a, Mat(), Mat(), 1, 0, s));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1512,12 +1517,12 @@ void MatOp_Cmp::assign(const MatExpr& e, Mat& m, int _type) const
 
 inline void MatOp_Cmp::makeExpr(MatExpr& res, int cmpop, const Mat& a, const Mat& b)
 {
-    res = MatExpr(&g_MatOp_Cmp, cmpop, a, b, Mat(), 1, 1);
+    assignExpr(res, MatExpr(&g_MatOp_Cmp, cmpop, a, b, Mat(), 1, 1));
 }
 
 inline void MatOp_Cmp::makeExpr(MatExpr& res, int cmpop, const Mat& a, double alpha)
 {
-    res = MatExpr(&g_MatOp_Cmp, cmpop, a, Mat(), Mat(), alpha, 1);
+    assignExpr(res, MatExpr(&g_MatOp_Cmp, cmpop, a, Mat(), Mat(), alpha, 1));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1536,7 +1541,7 @@ void MatOp_T::multiply(const MatExpr& e, double s, MatExpr& res) const
 {
     CV_INSTRUMENT_REGION();
 
-    res = e;
+    assignExpr(res, e);
     res.alpha *= s;
 }
 
@@ -1552,7 +1557,7 @@ void MatOp_T::transpose(const MatExpr& e, MatExpr& res) const
 
 inline void MatOp_T::makeExpr(MatExpr& res, const Mat& a, double alpha)
 {
-    res = MatExpr(&g_MatOp_T, 0, a, Mat(), Mat(), alpha, 0);
+    assignExpr(res, MatExpr(&g_MatOp_T, 0, a, Mat(), Mat(), alpha, 0));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1608,7 +1613,7 @@ void MatOp_GEMM::multiply(const MatExpr& e, double s, MatExpr& res) const
 {
     CV_INSTRUMENT_REGION();
 
-    res = e;
+    assignExpr(res, e);
     res.alpha *= s;
     res.beta *= s;
 }
@@ -1617,7 +1622,7 @@ void MatOp_GEMM::transpose(const MatExpr& e, MatExpr& res) const
 {
     CV_INSTRUMENT_REGION();
 
-    res = e;
+    assignExpr(res, e);
     res.flags = (!(e.flags & CV_GEMM_A_T) ? CV_GEMM_B_T : 0) |
                 (!(e.flags & CV_GEMM_B_T) ? CV_GEMM_A_T : 0) |
                 (!(e.flags & CV_GEMM_C_T) ? CV_GEMM_C_T : 0);
@@ -1627,7 +1632,7 @@ void MatOp_GEMM::transpose(const MatExpr& e, MatExpr& res) const
 inline void MatOp_GEMM::makeExpr(MatExpr& res, int flags, const Mat& a, const Mat& b,
                                  double alpha, const Mat& c, double beta)
 {
-    res = MatExpr(&g_MatOp_GEMM, flags, a, b, c, alpha, beta);
+    assignExpr(res, MatExpr(&g_MatOp_GEMM, flags, a, b, c, alpha, beta));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1653,7 +1658,7 @@ void MatOp_Invert::matmul(const MatExpr& e1, const MatExpr& e2, MatExpr& res) co
 
 inline void MatOp_Invert::makeExpr(MatExpr& res, int method, const Mat& m)
 {
-    res = MatExpr(&g_MatOp_Invert, method, m, Mat(), Mat(), 1, 0);
+    assignExpr(res, MatExpr(&g_MatOp_Invert, method, m, Mat(), Mat(), 1, 0));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1669,7 +1674,7 @@ void MatOp_Solve::assign(const MatExpr& e, Mat& m, int _type) const
 
 inline void MatOp_Solve::makeExpr(MatExpr& res, int method, const Mat& a, const Mat& b)
 {
-    res = MatExpr(&g_MatOp_Solve, method, a, b, Mat(), 1, 1);
+    assignExpr(res, MatExpr(&g_MatOp_Solve, method, a, b, Mat(), 1, 1));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1698,18 +1703,18 @@ void MatOp_Initializer::multiply(const MatExpr& e, double s, MatExpr& res) const
 {
     CV_INSTRUMENT_REGION();
 
-    res = e;
+    assignExpr(res, e);
     res.alpha *= s;
 }
 
 inline void MatOp_Initializer::makeExpr(MatExpr& res, int method, Size sz, int type, double alpha)
 {
-    res = MatExpr(getGlobalMatOpInitializer(), method, Mat(sz, type, (void*)(size_t)0xEEEEEEEE), Mat(), Mat(), alpha, 0);
+    assignExpr(res, MatExpr(getGlobalMatOpInitializer(), method, Mat(sz, type, (void*)(size_t)0xEEEEEEEE), Mat(), Mat(), alpha, 0));
 }
 
 inline void MatOp_Initializer::makeExpr(MatExpr& res, int method, int ndims, const int* sizes, int type, double alpha)
 {
-    res = MatExpr(getGlobalMatOpInitializer(), method, Mat(ndims, sizes, type, (void*)(size_t)0xEEEEEEEE), Mat(), Mat(), alpha, 0);
+    assignExpr(res, MatExpr(getGlobalMatOpInitializer(), method, Mat(ndims, sizes, type, (void*)(size_t)0xEEEEEEEE), Mat(), Mat(), alpha, 0));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1812,7 +1817,7 @@ MatExpr Mat::eye(Size size, int type)
 
     MatExpr e;
     MatOp_Initializer::makeExpr(e, 'I', size, type);
-    return e;
+    return std::move(e);
 }
 
 void MatExpr::swap(MatExpr& other)

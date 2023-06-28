@@ -3473,6 +3473,8 @@ protected:
 
 ///////////////////////////////// Matrix Expressions /////////////////////////////////
 
+class MatExpr;
+
 class CV_EXPORTS MatOp
 {
 public:
@@ -3512,6 +3514,8 @@ public:
 
     virtual Size size(const MatExpr& expr) const;
     virtual int type(const MatExpr& expr) const;
+protected:
+    static void assignExpr(MatExpr & dst, const MatExpr & other);
 };
 
 /** @brief Matrix expression representation
@@ -3572,6 +3576,10 @@ public:
     operator Mat() const;
     template<typename _Tp> operator Mat_<_Tp>() const;
 
+    MatExpr &operator=(const MatExpr &other) = delete;
+    MatExpr(const MatExpr & other) = delete;
+    MatExpr(MatExpr && other) = delete;
+
     Size size() const;
     int type() const;
 
@@ -3597,6 +3605,9 @@ public:
     Mat a, b, c;
     double alpha, beta;
     Scalar s;
+protected:
+    MatExpr &assign(const MatExpr &other) { op = other.op; flags = other.flags; a = other.a; b = other.b; c = other.c; alpha = other.alpha; beta = other.beta; s = other.s; return *this; }
+    friend class MatOp;
 };
 
 //! @} core_basic
