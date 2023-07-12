@@ -7,31 +7,39 @@ OpenCV environment variables reference {#tutorial_env_reference}
 @tableofcontents
 
 ### Introduction
-
-OpenCV can change its behavior depending on the runtime environment:
+Behavior of the OpenCV library can be changed by modifying its runtime environment. By setting particular environment variables users can:
 - enable extra debugging output or performance tracing
 - modify default locations and search paths
-- tune some algorithms or general behavior
+- tune some algorithm parameters or library behavior in general
 - enable or disable workarounds, safety features and optimizations
 
-**Notes:**
-- ⭐ marks most popular variables
-- variables with names like this `VAR_${NAME}` describes family of variables, where `${NAME}` should be changed to one of predefined values, e.g. `VAR_TBB`, `VAR_OPENMP`, ...
+##### Variable types
+All accepted environment variables can be approximately classified as belonging to one of the following types:
+- _non-null_ - set to anything to enable feature, in some cases can be interpreted as other types (e.g. _path_)
+- _bool_ - `1`, `True`, `true`, `TRUE` / `0`, `False`, `false`, `FALSE`
+- _number_/_size_ - unsigned number, can have suffixes `MB`, `Mb`, `mb`, `KB`, `Kb`, `kb`
+- _string_ - plain string or can have a specific structure
+- _path_ - to file, to directory
+- _paths_ - list of paths, `;`-separated on Windows, `:`-separated on other platforms
+
+##### Other notes
+- This sign - ⭐ marks most popular variables.
+- Variables with names like this `VAR_${NAME}` describes family of variables, where `${NAME}` should be changed to one of predefined values, e.g. `VAR_TBB`, `VAR_OPENMP`, ...
+- Some of variables can have negative effect on performance or safety, can cause crashes or other unexpected behavior. When trying something consult the source code and related 3rdparty libraries documentation, if applicable. This document does not cover all functionality areas affected by these variables, but tries to provide links to relevant documentation if possible.
 
 ##### Setting environment variable in Windows
 In terminal or cmd-file (bat-file):
 ```.bat
 set MY_ENV_VARIABLE=true
 C:\my_app.exe
-```
+```ing to re-read and fix the text once more tomorrow.
 In GUI:
 - Go to "Settings -> System -> About"
-- Click on "Advanced system settings" in the right part
+- Click on "Advanced system settings" in the right part of the window
 - In new window click on the "Environment variables" button
 - Add an entry to the "User variables" list
 
 ##### Setting environment variable in Linux
-
 In terminal or shell script:
 ```.sh
 export MY_ENV_VARIABLE=true
@@ -43,7 +51,6 @@ MY_ENV_VARIABLE=true ./my_app
 ```
 
 ##### Setting environment variable in Python
-
 ```.py
 import os
 os.environ["MY_ENV_VARIABLE"] = True
@@ -51,34 +58,24 @@ import cv2 # variables set after this may not have effect
 ```
 
 
-### Types
-
-- _non-null_ - set to anything to enable feature, in some cases can be interpreted as other types (e.g. path)
-- _bool_ - `1`, `True`, `true`, `TRUE` / `0`, `False`, `false`, `FALSE`
-- _number_/_size_ - unsigned number, suffixes `MB`, `Mb`, `mb`, `KB`, `Kb`, `kb`
-- _string_ - plain string or can have a structure
-- _path_ - to file, to directory
-- _paths_ - `;`-separated on Windows, `:`-separated on others
-
-
 ### General, core
 | name | type | default | description |
 |------|------|---------|-------------|
-| OPENCV_SKIP_CPU_BASELINE_CHECK | non-null | | do not check that current CPU supports all features used by the build (baseline) |
-| OPENCV_CPU_DISABLE | `,` or `;`-separated | | disable code branches which use CPU features (dispatched code) |
-| OPENCV_SETUP_TERMINATE_HANDLER | bool | true (Windows) | use std::set_terminate to install own termination handler |
-| OPENCV_LIBVA_RUNTIME | file path | | libva for VA interoperability utils |
+| OPENCV_SKIP_CPU_BASELINE_CHECK | non-null | | do not check that current CPU supports all features used by the build (CPU baseline) |
+| OPENCV_CPU_DISABLE | string, `,` or `;`-separated | | disable code branches which use listed CPU features (dispatched code) |
+| OPENCV_SETUP_TERMINATE_HANDLER | bool | true (Windows) | use `std::set_terminate` to install own termination handler |
+| OPENCV_LIBVA_RUNTIME | file path | | location of libva library for VA interoperability utils |
 | OPENCV_ENABLE_MEMALIGN | bool | true (except static analysis, memory sanitizer, fuzzying, _WIN32?) | enable aligned memory allocations |
-| OPENCV_BUFFER_AREA_ALWAYS_SAFE | bool | false | enable safe mode for multi-buffer allocations (each buffer separately) |
-| OPENCV_KMEANS_PARALLEL_GRANULARITY | num | 1000 | tune algorithm parallel work distribution parameter `parallel_for_(..., ..., ..., granularity)` |
-| OPENCV_DUMP_ERRORS | bool | true (Debug or Android), false (others) | print extra information on exception (log to Android) |
+| OPENCV_BUFFER_AREA_ALWAYS_SAFE | bool | false | enable safe mode for optimized multi-buffer allocations (each buffer will be allocated separately) |
+| OPENCV_KMEANS_PARALLEL_GRANULARITY | num | 1000 | tune kmeans algorithm parallel distribution parameter `parallel_for_(..., granularity)` |
+| OPENCV_DUMP_ERRORS | bool | true (Debug or Android), false (others) | print extra information on exception (will use Android log) |
 | OPENCV_DUMP_CONFIG | non-null | | print build configuration to stderr (`getBuildInformation`) |
 | OPENCV_PYTHON_DEBUG | bool | false | enable extra warnings in Python bindings |
-| OPENCV_TEMP_PATH | non-null / path | `/tmp/` (Linux), `/data/local/tmp/` (Android), `GetTempPathA` (Windows) | directory for temporary files |
-| OPENCV_DATA_PATH_HINT | paths | | paths for findDataFile |
-| OPENCV_DATA_PATH | paths | | paths for findDataFile |
-| OPENCV_SAMPLES_DATA_PATH_HINT | paths | | paths for findDataFile |
-| OPENCV_SAMPLES_DATA_PATH | paths | | paths for findDataFile |
+| OPENCV_TEMP_PATH | non-null, path | `/tmp/` (Linux), `/data/local/tmp/` (Android), `GetTempPathA` (Windows) | directory for temporary files |
+| OPENCV_DATA_PATH_HINT | paths | | search paths for `findDataFile` function |
+| OPENCV_DATA_PATH | paths | | search paths for `findDataFile` function |
+| OPENCV_SAMPLES_DATA_PATH_HINT | paths | | search paths for `findDataFile` function |
+| OPENCV_SAMPLES_DATA_PATH | paths | | search paths for `findDataFile` function |
 
 Links:
 - https://github.com/opencv/opencv/wiki/CPU-optimizations-build-options
@@ -87,11 +84,11 @@ Links:
 ### Logging
 | name | type | default | description |
 |------|------|---------|-------------|
-| ⭐ OPENCV_LOG_LEVEL | string | | logging level (see accepted values below) |
-| OPENCV_LOG_TIMESTAMP | bool | true | logging with timestamps |
-| OPENCV_LOG_TIMESTAMP_NS | bool | false | add nsec to logging timestamps |
+| ⭐ OPENCV_LOG_LEVEL | string | | set logging level (see accepted values below) |
+| OPENCV_LOG_TIMESTAMP | bool | true | enable logging with timestamps |
+| OPENCV_LOG_TIMESTAMP_NS | bool | false | add nano seconds to logging timestamps |
 
-##### Levels:
+##### Logging levels:
 - `0`, `O`, `OFF`, `S`, `SILENT`, `DISABLE`, `DISABLED`
 - `F`, `FATAL`
 - `E`, `ERROR`
@@ -101,15 +98,15 @@ Links:
 - `V`, `VERBOSE`
 
 
-### core/parallel_for
+### Parallel execution
 | name | type | default | description |
 |------|------|---------|-------------|
-| ⭐ OPENCV_FOR_THREADS_NUM | num | 0 | set number of threads |
+| ⭐ OPENCV_FOR_THREADS_NUM | num | 0 | set number of threads for threading backend (some backends may ignore this value, e.g. GCD on Apple) |
 | OPENCV_THREAD_POOL_ACTIVE_WAIT_PAUSE_LIMIT | num | 16 | tune pthreads parallel_for backend |
 | OPENCV_THREAD_POOL_ACTIVE_WAIT_WORKER | num | 2000 | tune pthreads parallel_for backend |
 | OPENCV_THREAD_POOL_ACTIVE_WAIT_MAIN | num | 10000 | tune pthreads parallel_for backend |
 | OPENCV_THREAD_POOL_ACTIVE_WAIT_THREADS_LIMIT | num | 0 | tune pthreads parallel_for backend |
-| OPENCV_FOR_OPENMP_DYNAMIC_DISABLE | bool | false | use single OpenMP thread |
+| OPENCV_FOR_OPENMP_DYNAMIC_DISABLE | bool | false | disable dynamic adjustment of the number of threads for OpenMP backend |
 
 
 ### backends
