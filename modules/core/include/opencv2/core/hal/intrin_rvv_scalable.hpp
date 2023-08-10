@@ -614,6 +614,17 @@ OPENCV_HAL_IMPL_RVV_BIN_OP(v_uint16, mul_wrap, vmul)
 OPENCV_HAL_IMPL_RVV_BIN_OP(v_int16, mul_wrap, vmul)
 
 //////// Saturating Multiply ////////
+#if __riscv_v_intrinsic >= 12000 // vnclip(u) now has 4 parameters
+#define OPENCV_HAL_IMPL_RVV_MUL_SAT(_Tpvec, _clip, _wmul) \
+inline _Tpvec v_mul(const _Tpvec& a, const _Tpvec& b) \
+{ \
+    return _clip(_wmul(a, b, VTraits<_Tpvec>::vlanes()), 0, __RISCV_VXRM_RNU, VTraits<_Tpvec>::vlanes()); \
+} \
+template<typename... Args> \
+inline _Tpvec v_mul(const _Tpvec& a1, const _Tpvec& a2, const Args&... va) { \
+    return v_mul(_clip(_wmul(a1, a2, VTraits<_Tpvec>::vlanes()), 0, __RISCV_VXRM_RNU, VTraits<_Tpvec>::vlanes()), va...); \
+}
+#else
 #define OPENCV_HAL_IMPL_RVV_MUL_SAT(_Tpvec, _clip, _wmul) \
 inline _Tpvec v_mul(const _Tpvec& a, const _Tpvec& b) \
 { \
@@ -623,6 +634,7 @@ template<typename... Args> \
 inline _Tpvec v_mul(const _Tpvec& a1, const _Tpvec& a2, const Args&... va) { \
     return v_mul(_clip(_wmul(a1, a2, VTraits<_Tpvec>::vlanes()), 0, VTraits<_Tpvec>::vlanes()), va...); \
 }
+#endif // _riscv_v_intrinsic >= 12000
 
 OPENCV_HAL_IMPL_RVV_MUL_SAT(v_uint8, vnclipu, vwmulu)
 OPENCV_HAL_IMPL_RVV_MUL_SAT(v_int8, vnclip, vwmul)
@@ -1149,11 +1161,19 @@ OPENCV_HAL_IMPL_RVV_ABSDIFF(v_float64, absdiff)
 OPENCV_HAL_IMPL_RVV_ABSDIFF(v_int8, absdiffs)
 OPENCV_HAL_IMPL_RVV_ABSDIFF(v_int16, absdiffs)
 
+#if __riscv_v_intrinsic >= 12000
+#define OPENCV_HAL_IMPL_RVV_ABSDIFF_S(_Tpvec, _rTpvec, width) \
+inline _rTpvec v_absdiff(const _Tpvec& a, const _Tpvec& b) \
+{ \
+    return vnclipu(vreinterpret_u##width##m2(vwsub_vv(v_max(a, b), v_min(a, b), VTraits<_Tpvec>::vlanes())), 0, __RISCV_VXRM_RNU, VTraits<_Tpvec>::vlanes()); \
+}
+#else
 #define OPENCV_HAL_IMPL_RVV_ABSDIFF_S(_Tpvec, _rTpvec, width) \
 inline _rTpvec v_absdiff(const _Tpvec& a, const _Tpvec& b) \
 { \
     return vnclipu(vreinterpret_u##width##m2(vwsub_vv(v_max(a, b), v_min(a, b), VTraits<_Tpvec>::vlanes())), 0, VTraits<_Tpvec>::vlanes()); \
 }
+#endif //__riscv_v_intrinsic >= 12000
 
 OPENCV_HAL_IMPL_RVV_ABSDIFF_S(v_int8, v_uint8, 16)
 OPENCV_HAL_IMPL_RVV_ABSDIFF_S(v_int16, v_uint16, 32)
@@ -1396,6 +1416,27 @@ inline v_int32 v_load_expand_q(const schar* ptr)
     return vwcvt_x(vwcvt_x(vle8_v_i8mf4(ptr, VTraits<v_int32>::vlanes()), VTraits<v_int32>::vlanes()), VTraits<v_int32>::vlanes());
 }
 
+#if __riscv_v_intrinsic >= 12000
+#define OPENCV_HAL_IMPL_RVV_PACK(_Tpvec, _Tp, _wTpvec, hwidth, hsuffix, suffix, rshr, shr) \
+inline _Tpvec v_pack(const _wTpvec& a, const _wTpvec& b) \
+{ \
+    return shr(vset(vlmul_ext_##suffix##m2(a), 1, b), 0, __RISCV_VXRM_RNU, VTraits<_Tpvec>::vlanes()); \
+} \
+inline void v_pack_store(_Tp* ptr, const _wTpvec& a) \
+{ \
+    vse##hwidth##_v_##hsuffix##mf2(ptr, shr(a, 0, __RISCV_VXRM_RNU, VTraits<_Tpvec>::vlanes()), VTraits<_wTpvec>::vlanes()); \
+} \
+template<int n = 0> inline \
+_Tpvec v_rshr_pack(const _wTpvec& a, const _wTpvec& b, int N = n) \
+{ \
+    return rshr(vset(vlmul_ext_##suffix##m2(a), 1, b), N, __RISCV_VXRM_RNU, VTraits<_Tpvec>::vlanes()); \
+} \
+template<int n = 0> inline \
+void v_rshr_pack_store(_Tp* ptr, const _wTpvec& a, int N = n) \
+{ \
+    vse##hwidth##_v_##hsuffix##mf2(ptr, rshr(a, N, __RISCV_VXRM_RNU, VTraits<_Tpvec>::vlanes()), VTraits<_wTpvec>::vlanes()); \
+}
+#else
 #define OPENCV_HAL_IMPL_RVV_PACK(_Tpvec, _Tp, _wTpvec, hwidth, hsuffix, suffix, rshr, shr) \
 inline _Tpvec v_pack(const _wTpvec& a, const _wTpvec& b) \
 { \
@@ -1415,14 +1456,36 @@ void v_rshr_pack_store(_Tp* ptr, const _wTpvec& a, int N = n) \
 { \
     vse##hwidth##_v_##hsuffix##mf2(ptr, rshr(a, N, VTraits<_Tpvec>::vlanes()), VTraits<_wTpvec>::vlanes()); \
 }
+#endif
 
 OPENCV_HAL_IMPL_RVV_PACK(v_uint8, uchar, v_uint16, 8, u8, u16, vnclipu, vnclipu)
 OPENCV_HAL_IMPL_RVV_PACK(v_int8, schar, v_int16, 8,  i8, i16, vnclip, vnclip)
 OPENCV_HAL_IMPL_RVV_PACK(v_uint16, ushort, v_uint32, 16, u16, u32, vnclipu, vnclipu)
 OPENCV_HAL_IMPL_RVV_PACK(v_int16, short, v_int32, 16, i16, i32, vnclip, vnclip)
-OPENCV_HAL_IMPL_RVV_PACK(v_uint32, unsigned, v_uint64, 32, u32, u64, vnclipu, vnsrl)
-OPENCV_HAL_IMPL_RVV_PACK(v_int32, int, v_int64, 32, i32, i64, vnclip, vnsra)
+OPENCV_HAL_IMPL_RVV_PACK(v_uint32, unsigned, v_uint64, 32, u32, u64, vnclipu, vnclipu)
+OPENCV_HAL_IMPL_RVV_PACK(v_int32, int, v_int64, 32, i32, i64, vnclip, vnclip)
 
+#if __riscv_v_intrinsic >= 12000
+#define OPENCV_HAL_IMPL_RVV_PACK_U(_Tpvec, _Tp, _wTpvec, _wTp, hwidth, width, hsuffix, suffix, rshr, cast, hvl, vl) \
+inline _Tpvec v_pack_u(const _wTpvec& a, const _wTpvec& b) \
+{ \
+    return vnclipu(cast(vmax(vset(vlmul_ext_##suffix##m2(a), 1, b), 0, vl)), 0, __RISCV_VXRM_RNU, vl); \
+} \
+inline void v_pack_u_store(_Tp* ptr, const _wTpvec& a) \
+{ \
+    vse##hwidth##_v_##hsuffix##mf2(ptr, vnclipu(vreinterpret_u##width##m1(vmax(a, 0, vl)), 0, __RISCV_VXRM_RNU, vl), hvl); \
+} \
+template<int N = 0> inline \
+_Tpvec v_rshr_pack_u(const _wTpvec& a, const _wTpvec& b, int n = N) \
+{ \
+    return vnclipu(cast(vmax(vset(vlmul_ext_##suffix##m2(a), 1, b), 0, vl)), n, __RISCV_VXRM_RNU, vl); \
+} \
+template<int N = 0> inline \
+void v_rshr_pack_u_store(_Tp* ptr, const _wTpvec& a, int n = N) \
+{ \
+    vse##hwidth##_v_##hsuffix##mf2(ptr, vnclipu(vreinterpret_u##width##m1(vmax(a, 0, vl)), n, __RISCV_VXRM_RNU, vl), hvl); \
+}
+#else
 #define OPENCV_HAL_IMPL_RVV_PACK_U(_Tpvec, _Tp, _wTpvec, _wTp, hwidth, width, hsuffix, suffix, rshr, cast, hvl, vl) \
 inline _Tpvec v_pack_u(const _wTpvec& a, const _wTpvec& b) \
 { \
@@ -1442,6 +1505,7 @@ void v_rshr_pack_u_store(_Tp* ptr, const _wTpvec& a, int n = N) \
 { \
     vse##hwidth##_v_##hsuffix##mf2(ptr, vnclipu(vreinterpret_u##width##m1(vmax(a, 0, vl)), n, vl), hvl); \
 }
+#endif
 
 OPENCV_HAL_IMPL_RVV_PACK_U(v_uint8, uchar, v_int16, short, 8, 16, u8, i16, vnclipu_wx_u8m1, vreinterpret_v_i16m2_u16m2, VTraits<v_int16>::vlanes(), VTraits<v_uint8>::vlanes())
 OPENCV_HAL_IMPL_RVV_PACK_U(v_uint16, ushort, v_int32, int, 16, 32, u16, i32, vnclipu_wx_u16m1, vreinterpret_v_i32m2_u32m2, VTraits<v_int32>::vlanes(), VTraits<v_uint16>::vlanes())
