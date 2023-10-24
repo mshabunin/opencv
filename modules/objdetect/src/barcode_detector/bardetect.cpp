@@ -339,13 +339,23 @@ void Detect::calCoherence(int window_size)
     }
 }
 
+
+inline bool isBadAngle(float rad)
+{
+    static constexpr float THRESHOLD_RADIAN = PI / 30;
+    rad = abs(rad);
+    // return rad > THRESHOLD_RADIAN && rad < (PI - THRESHOLD_RADIAN);
+    return ((THRESHOLD_RADIAN < rad) && (rad <= HALF_PI - THRESHOLD_RADIAN))
+        || ((HALF_PI + THRESHOLD_RADIAN < rad) && (rad < PI - THRESHOLD_RADIAN));
+}
+
 // will change localization_bbox bbox_scores
 // will change coherence,
 // depend on coherence orientation edge_nums
 void Detect::regionGrowing(int window_size)
 {
-    static constexpr float LOCAL_THRESHOLD_COHERENCE = 0.95f, THRESHOLD_RADIAN =
-            PI / 30, LOCAL_RATIO = 0.5f, EXPANSION_FACTOR = 1.2f;
+    static constexpr float LOCAL_THRESHOLD_COHERENCE = 0.95f,
+        LOCAL_RATIO = 0.5f, EXPANSION_FACTOR = 1.2f;
     static constexpr uint THRESHOLD_BLOCK_NUM = 35;
     Point pt_to_grow, pt;                       //point to grow
 
@@ -410,8 +420,7 @@ void Detect::regionGrowing(int window_size)
                         continue;
                     }
                     cur_value = orientation.at<float_t>(pt_to_grow);
-                    if (abs(cur_value - src_value) < THRESHOLD_RADIAN ||
-                        abs(cur_value - src_value) > PI - THRESHOLD_RADIAN)
+                    if (!isBadAngle(cur_value - src_value))
                     {
                         coherence.at<uint8_t>(pt_to_grow) = 0;
                         sin_sum += sin(2 * cur_value);
@@ -448,11 +457,8 @@ void Detect::regionGrowing(int window_size)
                 rect_orientation += (rect_orientation <= 0.f ? HALF_PI : -HALF_PI);
                 std::swap(minRect.size.width, minRect.size.height);
             }
-            if (abs(local_orientation - rect_orientation) > THRESHOLD_RADIAN &&
-                abs(local_orientation - rect_orientation) < PI - THRESHOLD_RADIAN)
-            {
+            if (isBadAngle(local_orientation - rect_orientation))
                 continue;
-            }
             minRect.angle = local_orientation * 180.f / PI;
             minRect.size.width *= static_cast<float>(window_size) * EXPANSION_FACTOR;
             minRect.size.height *= static_cast<float>(window_size);
