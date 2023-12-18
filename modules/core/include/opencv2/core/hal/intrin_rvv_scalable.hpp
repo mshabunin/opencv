@@ -145,6 +145,254 @@ OPENCV_HAL_IMPL_RVV_TRAITS(vfloat64m8_t, double, e64m8, 64)
 #endif
 
 
+#if defined(__THEAD_VERSION__) && (__riscv_v == 7000)
+
+inline vuint32m1_t vadd(vuint32m1_t lhs, uint32_t rhs, size_t vl)
+{
+    return vadd_vx_u32m1(lhs, rhs, vl);
+}
+
+inline vuint32m2_t vadd(vuint32m2_t lhs, uint32_t rhs, size_t vl)
+{
+    return vadd_vx_u32m2(lhs, rhs, vl);
+}
+
+//=========
+
+#define OPENCV_HAL_IMPL_071_OVERLOAD_BIN_OP(vec, uvec, suf, usuf) \
+inline uvec vsaddu(uvec lhs, uvec rhs, size_t vl) \
+{ \
+    return vsaddu_vv_##usuf(lhs, rhs, vl); \
+} \
+inline uvec vssubu(uvec lhs, uvec rhs, size_t vl) \
+{ \
+    return vssubu_vv_##usuf(lhs, rhs, vl); \
+} \
+inline vec vsadd(vec lhs, vec rhs, size_t vl) \
+{ \
+    return vsadd_vv_##suf(lhs, rhs, vl); \
+} \
+inline vec vssub(vec lhs, vec rhs, size_t vl) \
+{ \
+    return vssub_vv_##suf(lhs, rhs, vl); \
+} \
+inline vec vadd(vec lhs, vec rhs, size_t vl) \
+{ \
+    return vadd_vv_##suf(lhs, rhs, vl); \
+} \
+inline vec vsub(vec lhs, vec rhs, size_t vl) \
+{ \
+    return vsub_vv_##suf(lhs, rhs, vl); \
+} \
+inline uvec vadd(uvec lhs, uvec rhs, size_t vl) \
+{ \
+    return vadd_vv_##usuf(lhs, rhs, vl); \
+} \
+inline uvec vsub(uvec lhs, uvec rhs, size_t vl) \
+{ \
+    return vsub_vv_##usuf(lhs, rhs, vl); \
+}
+
+OPENCV_HAL_IMPL_071_OVERLOAD_BIN_OP(vint8m1_t, vuint8m1_t, i8m1, u8m1)
+OPENCV_HAL_IMPL_071_OVERLOAD_BIN_OP(vint16m1_t, vuint16m1_t, i16m1, u16m1)
+OPENCV_HAL_IMPL_071_OVERLOAD_BIN_OP(vint32m1_t, vuint32m1_t, i32m1, u32m1)
+OPENCV_HAL_IMPL_071_OVERLOAD_BIN_OP(vint64m1_t, vuint64m1_t, i64m1, u64m1)
+
+//=========
+
+
+#define OPENCV_HAL_IMPL_071_OVERLOAD_BIN_FOP(vec, suf) \
+inline vec vfadd(vec lhs, vec rhs, size_t vl) \
+{ \
+    return vfadd_vv_##suf(lhs, rhs, vl); \
+} \
+inline vec vfsub(vec lhs, vec rhs, size_t vl) \
+{ \
+    return vfsub_vv_##suf(lhs, rhs, vl); \
+} \
+inline vec vfmul(vec lhs, vec rhs, size_t vl) \
+{ \
+    return vfmul_vv_##suf(lhs, rhs, vl); \
+} \
+inline vec vfdiv(vec lhs, vec rhs, size_t vl) \
+{ \
+    return vfdiv_vv_##suf(lhs, rhs, vl); \
+}
+
+OPENCV_HAL_IMPL_071_OVERLOAD_BIN_FOP(vfloat32m1_t, f32m1)
+OPENCV_HAL_IMPL_071_OVERLOAD_BIN_FOP(vfloat64m1_t, f64m1)
+
+//=========
+
+#define OPENCV_HAL_IMPL_071_OVERLOAD_BIN_WIDE(vec, wvec, uvec, wuvec, wsuf, wusuf) \
+inline wvec vwmul(vec lhs, vec rhs, size_t vl) \
+{ \
+    return vwmul_vv_##wsuf(lhs, rhs, vl);\
+} \
+inline wuvec vwmulu(uvec lhs, uvec rhs, size_t vl) \
+{ \
+    return vwmulu_vv_##wusuf(lhs, rhs, vl);\
+}
+
+OPENCV_HAL_IMPL_071_OVERLOAD_BIN_WIDE(vint8m1_t, vint16m2_t, vuint8m1_t, vuint16m2_t, i16m2, u16m2)
+OPENCV_HAL_IMPL_071_OVERLOAD_BIN_WIDE(vint16m1_t, vint32m2_t, vuint16m1_t, vuint32m2_t, i32m2, u32m2)
+OPENCV_HAL_IMPL_071_OVERLOAD_BIN_WIDE(vint32m1_t, vint64m2_t, vuint32m1_t, vuint64m2_t, i64m2, u64m2)
+
+//=========
+
+
+
+//=========
+
+inline vuint32m4_t vor(vuint32m4_t lhs, vuint32m4_t rhs, size_t vl)
+{
+    return vor_vv_u32m4(lhs,rhs, vl);
+}
+
+inline vuint32m2_t vor(vuint32m2_t lhs, vuint32m2_t rhs, size_t vl)
+{
+    return vor_vv_u32m2(lhs,rhs, vl);
+}
+
+inline vuint32m1_t vor(vuint32m1_t lhs, vuint32m1_t rhs, size_t vl)
+{
+    return vor_vv_u32m1(lhs,rhs, vl);
+}
+
+//------
+
+inline vuint16m2_t vset(vuint16m2_t val, size_t idx, vuint16m1_t sub)
+{
+    return vset_v_u16m1_u16m2(val, idx, sub);
+}
+
+inline vuint32m4_t vset(vuint32m4_t val, size_t idx, vuint32m1_t sub)
+{
+    return vset_v_u32m1_u32m4(val, idx, sub);
+}
+
+inline vuint64m8_t vset(vuint64m8_t val, size_t idx, vuint64m1_t sub)
+{
+    return vset_v_u64m1_u64m8(val, idx, sub);
+}
+
+//------
+
+inline vuint32m4_t vnsrl(vuint64m8_t val, size_t shift, size_t vl)
+{
+    return vnsrl_wx_u32m4(val, shift, vl);
+}
+
+inline vuint16m2_t vnsrl(vuint32m4_t val, size_t shift, size_t vl)
+{
+    return vnsrl_wx_u16m2(val, shift, vl);
+}
+
+inline vuint8m1_t vnsrl(vuint16m2_t val, size_t shift, size_t vl)
+{
+    return vnsrl_wx_u8m1(val, shift, vl);
+}
+
+//------
+
+
+inline vuint64m2_t vwcvtu_x(vuint32m1_t val, size_t vl)
+{
+    return vwcvtu_x_x_v_u64m2(val, vl);
+}
+
+inline vuint64m4_t vwcvtu_x(vuint32m2_t val, size_t vl)
+{
+    return vwcvtu_x_x_v_u64m4(val, vl);
+}
+
+#define OPENCV_HAL_IMPL_071_VREINTERPRET(vec1, suf, vec2) \
+inline vec1 vreinterpret_##suf(vec2 val) \
+{ \
+    vec1 ret; \
+    __asm__ ("vmv.v.v %ret, %val" \
+             : [ret] "=r" (ret) \
+             : [val] "r" (val) \
+             : /* no clobber */); \
+    return ret; \
+}
+
+OPENCV_HAL_IMPL_071_VREINTERPRET(vuint32m1_t, u32m1, vint8m1_t)
+OPENCV_HAL_IMPL_071_VREINTERPRET(vuint32m2_t, u32m2, vint8m2_t)
+OPENCV_HAL_IMPL_071_VREINTERPRET(vuint32m4_t, u32m4, vint8m4_t)
+
+
+#define OPENCV_HAL_IMPL_071_VEXT(vec1, vec2, suf1, suf2, totype, tomul) \
+inline vec2 vlmul_ext_v_##suf1##_##suf2(vec1 val) \
+{ \
+    vec2 ret; \
+    __asm__ ("vsetvl t0, t0, totype, tomul \r\n" \
+             "vmv.v.v %ret, %val \r\n" \
+             : [ret] "=r" (ret) \
+             : [val] "r" (val) \
+             : /* no clobber */); \
+    return ret; \
+}
+
+OPENCV_HAL_IMPL_071_VEXT(vuint16m1_t, vuint16m2_t, u16m1, u16m2, e16, m2)
+OPENCV_HAL_IMPL_071_VEXT(vuint32m1_t, vuint32m4_t, u32m1, u32m4, e32, m4)
+OPENCV_HAL_IMPL_071_VEXT(vuint64m1_t, vuint64m8_t, u64m1, u64m8, e64, m8)
+
+// inline vuint16m2_t vlmul_ext_v_u16m1_u16m2(vuint16m1_t val)
+// {
+// }
+
+inline vuint32m4_t vlmul_ext_u32m4(vuint32m1_t val)
+{
+    return vlmul_ext_v_u32m1_u32m4(val);
+}
+
+inline vuint64m8_t vlmul_ext_u64m8(vuint64m1_t val)
+{
+    return vlmul_ext_v_u64m1_u64m8(val);
+}
+
+//------
+
+inline vuint32m1_t vslide1up(vuint32m1_t lhs, uint32_t rhs, size_t vl)
+{
+    return vslide1up_vx_u32m1(lhs, rhs, vl);
+}
+
+inline vuint32m2_t vslide1up(vuint32m2_t lhs, uint32_t rhs, size_t vl)
+{
+    return vslide1up_vx_u32m2(lhs, rhs, vl);
+}
+
+inline vuint32m4_t vslide1up(vuint32m4_t lhs, uint32_t rhs, size_t vl)
+{
+    return vslide1up_vx_u32m4(lhs, rhs, vl);
+}
+
+//------
+
+#define OPENCV_HAL_IMPL_071_VLOXEI(vec, vtype, suf1, idxvec, suf2) \
+inline vec vloxe##suf2##_v_##suf1(const vtype * data, idxvec idx, size_t vl) \
+{ \
+    vec ret; \
+    __asm__ ( \
+        "vsetvl t0, %vl, e8 \r\n" \
+        "vloxei8.v %ret, (%data), %idx, 1 \r\n" \
+             : [ret] "=r" (ret) \
+             : [vl] "g" (vl), [data] "m" (data), [idx] "r" (idx) \
+             : /* no clobber */); \
+    return ret; \
+}
+
+OPENCV_HAL_IMPL_071_VLOXEI(vint8m1_t, int8_t, i8m1, vuint8m1_t, i8)
+OPENCV_HAL_IMPL_071_VLOXEI(vint8m1_t, int8_t, i8m1, vuint32m4_t, i32)
+OPENCV_HAL_IMPL_071_VLOXEI(vint8m2_t, int8_t, i8m2, vuint32m8_t, i32)
+OPENCV_HAL_IMPL_071_VLOXEI(vint16m1_t, int16_t, i16m1, vuint32m2_t, i32)
+OPENCV_HAL_IMPL_071_VLOXEI(vint32m1_t, int32_t, i32m1, vuint32m1_t, i32)
+
+#endif
+
+
 // LLVM/Clang defines "overloaded intrinsics" e.g. 'vand(op1, op2)'
 // GCC does not have these functions, so we need to implement them manually
 // We implement only selected subset required to build current state of the code
@@ -448,8 +696,11 @@ OPENCV_HAL_IMPL_RVV_LOADSTORE_OP(v_float64, vfloat64m1_t, double, VTraits<v_floa
 #define OPENCV_HAL_IMPL_RVV_LUT(_Tpvec, _Tp, suffix) \
 inline _Tpvec v_lut(const _Tp* tab, const int* idx) \
 { \
-    auto vidx = vmul(vreinterpret_u32##suffix(vle32_v_i32##suffix(idx, VTraits<_Tpvec>::vlanes())), sizeof(_Tp), VTraits<_Tpvec>::vlanes()); \
-    return vloxei32(tab, vidx, VTraits<_Tpvec>::vlanes()); \
+    const size_t vl = VTraits<_Tpvec>::vlanes(); \
+    const size_t ivl = vl * 4 / sizeof(_Tp); \
+    auto vuidx = vle32_v_u32##suffix((const uint32_t*)idx, ivl); \
+    vuidx = vmul(vuidx, sizeof(_Tp), ivl); \
+    return vloxei32(tab, vuidx, vl); \
 }
 OPENCV_HAL_IMPL_RVV_LUT(v_int8, schar, m4)
 OPENCV_HAL_IMPL_RVV_LUT(v_int16, short, m2)
@@ -463,8 +714,8 @@ OPENCV_HAL_IMPL_RVV_LUT(v_float64, double, mf2)
 #define OPENCV_HAL_IMPL_RVV_LUT_PAIRS(_Tpvec, _Tp, suffix1, suffix2, v_trunc) \
 inline _Tpvec v_lut_pairs(const _Tp* tab, const int* idx) \
 { \
-    auto v0 = vle32_v_u32##suffix1((unsigned*)idx, VTraits<_Tpvec>::vlanes()/2); \
-    auto v1 = vadd(v0, 1, VTraits<_Tpvec>::vlanes()/2); \
+    vuint32##suffix1##_t v0 = vle32_v_u32##suffix1((uint32_t*)idx, VTraits<_Tpvec>::vlanes()/2); \
+    vuint32##suffix1##_t v1 = vadd(v0, 1, VTraits<_Tpvec>::vlanes()/2); \
     auto w0 = vwcvtu_x(v0, VTraits<_Tpvec>::vlanes()/2); \
     auto w1 = vwcvtu_x(v1, VTraits<_Tpvec>::vlanes()/2); \
     auto sh1 = vslide1up(v_trunc(vreinterpret_u32##suffix2(w1)),0, VTraits<_Tpvec>::vlanes()); \
@@ -485,10 +736,10 @@ OPENCV_HAL_IMPL_RVV_LUT_PAIRS(v_float64, double, mf2, m1, vlmul_trunc_u32mf2)
 #define OPENCV_HAL_IMPL_RVV_LUT_QUADS(_Tpvec, _Tp, suffix0, suffix1, suffix2, v_trunc) \
 inline _Tpvec v_lut_quads(const _Tp* tab, const int* idx) \
 { \
-    auto v0 = vle32_v_u32##suffix0((unsigned*)idx, VTraits<_Tpvec>::vlanes()/4); \
-    auto v1 = vadd(v0, 1, VTraits<_Tpvec>::vlanes()/4); \
-    auto v2 = vadd(v0, 2, VTraits<_Tpvec>::vlanes()/4); \
-    auto v3 = vadd(v0, 3, VTraits<_Tpvec>::vlanes()/4); \
+    vuint32##suffix0##_t v0 = vle32_v_u32##suffix0((unsigned*)idx, VTraits<_Tpvec>::vlanes()/4); \
+    vuint32##suffix0##_t v1 = vadd(v0, 1, VTraits<_Tpvec>::vlanes()/4); \
+    vuint32##suffix0##_t v2 = vadd(v0, 2, VTraits<_Tpvec>::vlanes()/4); \
+    vuint32##suffix0##_t v3 = vadd(v0, 3, VTraits<_Tpvec>::vlanes()/4); \
     auto w0 = vwcvtu_x(v0, VTraits<_Tpvec>::vlanes()/4); \
     auto w1 = vwcvtu_x(v1, VTraits<_Tpvec>::vlanes()/4); \
     auto w2 = vwcvtu_x(v2, VTraits<_Tpvec>::vlanes()/4); \
@@ -528,17 +779,17 @@ inline v_float64 v_lut(const double* tab, const v_int32& vidx) \
 #endif
 
 
-inline v_uint8 v_lut(const uchar* tab, const int* idx) { return v_reinterpret_as_u8(v_lut((schar*)tab, idx)); }
-inline v_uint8 v_lut_pairs(const uchar* tab, const int* idx) { return v_reinterpret_as_u8(v_lut_pairs((schar*)tab, idx)); }
-inline v_uint8 v_lut_quads(const uchar* tab, const int* idx) { return v_reinterpret_as_u8(v_lut_quads((schar*)tab, idx)); }
-inline v_uint16 v_lut(const ushort* tab, const int* idx) { return v_reinterpret_as_u16(v_lut((short*)tab, idx)); }
-inline v_uint16 v_lut_pairs(const ushort* tab, const int* idx) { return v_reinterpret_as_u16(v_lut_pairs((short*)tab, idx)); }
-inline v_uint16 v_lut_quads(const ushort* tab, const int* idx) { return v_reinterpret_as_u16(v_lut_quads((short*)tab, idx)); }
-inline v_uint32 v_lut(const unsigned* tab, const int* idx) { return v_reinterpret_as_u32(v_lut((int*)tab, idx)); }
-inline v_uint32 v_lut_pairs(const unsigned* tab, const int* idx) { return v_reinterpret_as_u32(v_lut_pairs((int*)tab, idx)); }
-inline v_uint32 v_lut_quads(const unsigned* tab, const int* idx) { return v_reinterpret_as_u32(v_lut_quads((int*)tab, idx)); }
-inline v_uint64 v_lut(const uint64* tab, const int* idx) { return v_reinterpret_as_u64(v_lut((const int64_t *)tab, idx)); }
-inline v_uint64 v_lut_pairs(const uint64* tab, const int* idx) { return v_reinterpret_as_u64(v_lut_pairs((const int64_t *)tab, idx)); }
+inline v_uint8 v_lut(const uchar* tab, const int* idx) { return v_reinterpret_as_u8(v_lut(tab, idx)); }
+inline v_uint8 v_lut_pairs(const uchar* tab, const int* idx) { return v_reinterpret_as_u8(v_lut_pairs(tab, idx)); }
+inline v_uint8 v_lut_quads(const uchar* tab, const int* idx) { return v_reinterpret_as_u8(v_lut_quads(tab, idx)); }
+inline v_uint16 v_lut(const ushort* tab, const int* idx) { return v_reinterpret_as_u16(v_lut(tab, idx)); }
+inline v_uint16 v_lut_pairs(const ushort* tab, const int* idx) { return v_reinterpret_as_u16(v_lut_pairs(tab, idx)); }
+inline v_uint16 v_lut_quads(const ushort* tab, const int* idx) { return v_reinterpret_as_u16(v_lut_quads(tab, idx)); }
+inline v_uint32 v_lut(const unsigned* tab, const int* idx) { return v_reinterpret_as_u32(v_lut(tab, idx)); }
+inline v_uint32 v_lut_pairs(const unsigned* tab, const int* idx) { return v_reinterpret_as_u32(v_lut_pairs(tab, idx)); }
+inline v_uint32 v_lut_quads(const unsigned* tab, const int* idx) { return v_reinterpret_as_u32(v_lut_quads(tab, idx)); }
+inline v_uint64 v_lut(const uint64* tab, const int* idx) { return v_reinterpret_as_u64(v_lut(tab, idx)); }
+inline v_uint64 v_lut_pairs(const uint64* tab, const int* idx) { return v_reinterpret_as_u64(v_lut_pairs(tab, idx)); }
 
 ////////////// Pack boolean ////////////////////
 inline v_uint8 v_pack_b(const v_uint16& a, const v_uint16& b)
@@ -1447,7 +1698,8 @@ OPENCV_HAL_IMPL_RVV_EXPAND(int, v_int64, vint64m2_t, v_int32, 32, i64, i32, vwcv
 
 inline v_uint32 v_load_expand_q(const uchar* ptr)
 {
-    return vwcvtu_x(vwcvtu_x(vle8_v_u8mf4(ptr, VTraits<v_uint32>::vlanes()), VTraits<v_uint32>::vlanes()), VTraits<v_uint32>::vlanes());
+    const size_t vl = VTraits<v_uint32>::vlanes();
+    return vwcvtu_x(vwcvtu_x(vle8_v_u8mf4(ptr, vl), vl), vl);
 }
 
 inline v_int32 v_load_expand_q(const schar* ptr)
