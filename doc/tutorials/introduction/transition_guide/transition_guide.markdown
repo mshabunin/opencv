@@ -1,7 +1,7 @@
 Transition guide {#tutorial_transition_guide}
 ================
 
-@prev_tutorial{tutorial_documentation}
+@prev_tutorial{tutorial_writing_tests}
 @next_tutorial{tutorial_cross_referencing}
 
 |    |    |
