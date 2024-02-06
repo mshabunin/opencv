@@ -1166,12 +1166,13 @@ void Mat::push_back(const Mat_<_Tp>& m)
     push_back((const Mat&)m);
 }
 
+#if OPENCV_ENABLE_MATEXPR
 template<> inline
 void Mat::push_back(const MatExpr& expr)
 {
     push_back(static_cast<Mat>(expr));
 }
-
+#endif
 
 template<typename _Tp> inline
 void Mat::push_back(const std::vector<_Tp>& v)
@@ -1849,6 +1850,7 @@ Mat_<_Tp>& Mat_<_Tp>::operator = (Mat&& m)
     return *this;
 }
 
+#if OPENCV_ENABLE_MATEXPR
 template<typename _Tp> inline
 Mat_<_Tp>::Mat_(MatExpr&& e)
     : Mat()
@@ -1856,7 +1858,7 @@ Mat_<_Tp>::Mat_(MatExpr&& e)
     flags = (flags & ~CV_MAT_TYPE_MASK) + traits::Type<_Tp>::value;
     *this = Mat(e);
 }
-
+#endif
 
 ///////////////////////////// SparseMat /////////////////////////////
 
@@ -3004,6 +3006,7 @@ MatCommaInitializer_<_Tp> operator << (const Mat_<_Tp>& m, T2 val)
 
 ///////////////////////// Matrix Expressions ////////////////////////
 
+#if OPENCV_ENABLE_MATEXPR
 inline
 Mat& Mat::operator = (const MatExpr& e)
 {
@@ -3059,190 +3062,7 @@ MatExpr Mat_<_Tp>::eye(Size sz)
 {
     return Mat::eye(sz, traits::Type<_Tp>::value);
 }
-
-inline
-MatExpr::MatExpr()
-    : op(0), flags(0), a(Mat()), b(Mat()), c(Mat()), alpha(0), beta(0), s()
-{}
-
-inline
-MatExpr::MatExpr(const MatOp* _op, int _flags, const Mat& _a, const Mat& _b,
-                 const Mat& _c, double _alpha, double _beta, const Scalar& _s)
-    : op(_op), flags(_flags), a(_a), b(_b), c(_c), alpha(_alpha), beta(_beta), s(_s)
-{}
-
-inline
-MatExpr::operator Mat() const
-{
-    Mat m;
-    op->assign(*this, m);
-    return m;
-}
-
-template<typename _Tp> inline
-MatExpr::operator Mat_<_Tp>() const
-{
-    Mat_<_Tp> m;
-    op->assign(*this, m, traits::Type<_Tp>::value);
-    return m;
-}
-
-
-template<typename _Tp> static inline
-MatExpr min(const Mat_<_Tp>& a, const Mat_<_Tp>& b)
-{
-    return cv::min((const Mat&)a, (const Mat&)b);
-}
-
-template<typename _Tp> static inline
-MatExpr min(const Mat_<_Tp>& a, double s)
-{
-    return cv::min((const Mat&)a, s);
-}
-
-template<typename _Tp> static inline
-MatExpr min(double s, const Mat_<_Tp>& a)
-{
-    return cv::min((const Mat&)a, s);
-}
-
-template<typename _Tp> static inline
-MatExpr max(const Mat_<_Tp>& a, const Mat_<_Tp>& b)
-{
-    return cv::max((const Mat&)a, (const Mat&)b);
-}
-
-template<typename _Tp> static inline
-MatExpr max(const Mat_<_Tp>& a, double s)
-{
-    return cv::max((const Mat&)a, s);
-}
-
-template<typename _Tp> static inline
-MatExpr max(double s, const Mat_<_Tp>& a)
-{
-    return cv::max((const Mat&)a, s);
-}
-
-template<typename _Tp> static inline
-MatExpr abs(const Mat_<_Tp>& m)
-{
-    return cv::abs((const Mat&)m);
-}
-
-
-static inline
-Mat& operator += (Mat& a, const MatExpr& b)
-{
-    b.op->augAssignAdd(b, a);
-    return a;
-}
-
-static inline
-const Mat& operator += (const Mat& a, const MatExpr& b)
-{
-    b.op->augAssignAdd(b, (Mat&)a);
-    return a;
-}
-
-template<typename _Tp> static inline
-Mat_<_Tp>& operator += (Mat_<_Tp>& a, const MatExpr& b)
-{
-    b.op->augAssignAdd(b, a);
-    return a;
-}
-
-template<typename _Tp> static inline
-const Mat_<_Tp>& operator += (const Mat_<_Tp>& a, const MatExpr& b)
-{
-    b.op->augAssignAdd(b, (Mat&)a);
-    return a;
-}
-
-static inline
-Mat& operator -= (Mat& a, const MatExpr& b)
-{
-    b.op->augAssignSubtract(b, a);
-    return a;
-}
-
-static inline
-const Mat& operator -= (const Mat& a, const MatExpr& b)
-{
-    b.op->augAssignSubtract(b, (Mat&)a);
-    return a;
-}
-
-template<typename _Tp> static inline
-Mat_<_Tp>& operator -= (Mat_<_Tp>& a, const MatExpr& b)
-{
-    b.op->augAssignSubtract(b, a);
-    return a;
-}
-
-template<typename _Tp> static inline
-const Mat_<_Tp>& operator -= (const Mat_<_Tp>& a, const MatExpr& b)
-{
-    b.op->augAssignSubtract(b, (Mat&)a);
-    return a;
-}
-
-static inline
-Mat& operator *= (Mat& a, const MatExpr& b)
-{
-    b.op->augAssignMultiply(b, a);
-    return a;
-}
-
-static inline
-const Mat& operator *= (const Mat& a, const MatExpr& b)
-{
-    b.op->augAssignMultiply(b, (Mat&)a);
-    return a;
-}
-
-template<typename _Tp> static inline
-Mat_<_Tp>& operator *= (Mat_<_Tp>& a, const MatExpr& b)
-{
-    b.op->augAssignMultiply(b, a);
-    return a;
-}
-
-template<typename _Tp> static inline
-const Mat_<_Tp>& operator *= (const Mat_<_Tp>& a, const MatExpr& b)
-{
-    b.op->augAssignMultiply(b, (Mat&)a);
-    return a;
-}
-
-static inline
-Mat& operator /= (Mat& a, const MatExpr& b)
-{
-    b.op->augAssignDivide(b, a);
-    return a;
-}
-
-static inline
-const Mat& operator /= (const Mat& a, const MatExpr& b)
-{
-    b.op->augAssignDivide(b, (Mat&)a);
-    return a;
-}
-
-template<typename _Tp> static inline
-Mat_<_Tp>& operator /= (Mat_<_Tp>& a, const MatExpr& b)
-{
-    b.op->augAssignDivide(b, a);
-    return a;
-}
-
-template<typename _Tp> static inline
-const Mat_<_Tp>& operator /= (const Mat_<_Tp>& a, const MatExpr& b)
-{
-    b.op->augAssignDivide(b, (Mat&)a);
-    return a;
-}
-
+#endif
 
 //////////////////////////////// UMat ////////////////////////////////
 
@@ -3404,9 +3224,6 @@ inline void UMatData::markDeviceCopyObsolete(bool flag)
 }
 
 //! @endcond
-
-static inline
-void swap(MatExpr& a, MatExpr& b) { a.swap(b); }
 
 } //cv
 

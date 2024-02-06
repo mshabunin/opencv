@@ -1546,6 +1546,7 @@ TEST(Core_Mat, augmentation_operations_9688)
     }
 }
 
+#if OPENCV_ENABLE_MATEXPR
 //These tests guard regressions against running MatExpr
 //operations on empty operands and giving bogus
 //results.
@@ -1559,6 +1560,7 @@ TEST(Core_MatExpr, empty_check_15760)
     EXPECT_THROW(Mat c = Mat().t(), cv::Exception);
     EXPECT_THROW(Mat c = Mat().cross(Mat()), cv::Exception);
 }
+#endif // OPENCV_ENABLE_MATEXPR
 
 TEST(Core_Arithm, scalar_handling_19599)  // https://github.com/opencv/opencv/issues/19599 (OpenCV 4.x+ only)
 {

@@ -1999,6 +1999,7 @@ TEST(Core_InputArray, support_CustomType)
     }
 }
 
+#if OPENCV_ENABLE_MATEXPR
 
 TEST(Core_InputArray, fetch_MatExpr)
 {
@@ -2013,6 +2014,7 @@ TEST(Core_InputArray, fetch_MatExpr)
     EXPECT_EQ(dst.size(), result.size());
 }
 
+#endif
 
 class TestInputArrayRangeChecking {
     static const char *kind2str(cv::_InputArray ia)
@@ -2193,6 +2195,8 @@ TEST(Core_Vectors, issue_13078_workaround)
     ASSERT_EQ(7, ints[3]);
 }
 
+#if OPENCV_ENABLE_MATEXPR
+
 TEST(Core_MatExpr, issue_13926)
 {
     Mat M1 = (Mat_<double>(4,4,CV_64FC1) << 1, 2, 3, 4,
@@ -2243,6 +2247,8 @@ TEST(Core_MatExpr, issue_16689)
         EXPECT_EQ(Mat(r).size(), r.size()) << "[10x5].t() x [5x10].t() => [10x10]";
     }
 }
+
+#endif // OPENCV_ENABLE_MATEXPR
 
 #ifdef HAVE_EIGEN
 TEST(Core_Eigen, eigen2cv_check_Mat_type)

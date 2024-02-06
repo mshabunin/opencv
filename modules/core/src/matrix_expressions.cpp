@@ -12,6 +12,8 @@
 #include "precomp.hpp"
 #include <opencv2/core/utils/logger.hpp>
 
+#if OPENCV_ENABLE_MATEXPR
+
 namespace cv
 {
 
@@ -1845,3 +1847,5 @@ _InputArray::_InputArray(const MatExpr& expr)
 }
 
 } // cv::
+
+#endif // OPENCV_ENABLE_MATEXPR

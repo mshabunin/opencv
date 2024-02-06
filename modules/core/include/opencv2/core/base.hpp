@@ -588,8 +588,6 @@ class CV_EXPORTS DMatch;
 class CV_EXPORTS RNG;
 
 class CV_EXPORTS Mat;
-class CV_EXPORTS MatExpr;
-
 class CV_EXPORTS UMat;
 
 class CV_EXPORTS SparseMat;

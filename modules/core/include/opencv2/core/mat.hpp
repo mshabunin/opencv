@@ -48,6 +48,10 @@
 #  error mat.hpp header must be compiled as C++
 #endif
 
+#ifndef OPENCV_ENABLE_MATEXPR
+#define OPENCV_ENABLE_MATEXPR 1
+#endif
+
 #include "opencv2/core/matx.hpp"
 #include "opencv2/core/types.hpp"
 
@@ -58,6 +62,10 @@
 
 namespace cv
 {
+
+#if OPENCV_ENABLE_MATEXPR
+class CV_EXPORTS MatExpr;
+#endif
 
 //! @addtogroup core_basic
 //! @{
@@ -190,7 +198,9 @@ public:
     _InputArray();
     _InputArray(int _flags, void* _obj);
     _InputArray(const Mat& m);
+#if OPENCV_ENABLE_MATEXPR
     _InputArray(const MatExpr& expr);
+#endif
     _InputArray(const std::vector<Mat>& vec);
     template<typename _Tp> _InputArray(const Mat_<_Tp>& m);
     template<typename _Tp> _InputArray(const std::vector<_Tp>& vec);
@@ -1073,6 +1083,7 @@ public:
      */
     Mat& operator = (const Mat& m);
 
+#if OPENCV_ENABLE_MATEXPR
     /** @overload
     @param expr Assigned matrix expression object. As opposite to the first form of the assignment
     operation, the second form can reuse already allocated matrix if it has the right size and type to
@@ -1081,6 +1092,7 @@ public:
     automatic C reallocation.
     */
     Mat& operator = (const MatExpr& expr);
+#endif
 
     //! retrieve UMat from Mat
     UMat getUMat(AccessFlag accessFlags, UMatUsageFlags usageFlags = USAGE_DEFAULT) const;
@@ -1322,6 +1334,7 @@ public:
      */
     Mat reshape(int cn, const std::vector<int>& newshape) const;
 
+#if OPENCV_ENABLE_MATEXPR
     /** @brief Transposes a matrix.
 
     The method performs matrix transposition by means of matrix expressions. It does not perform the
@@ -1356,6 +1369,7 @@ public:
     @param scale Optional scale factor.
      */
     MatExpr mul(InputArray m, double scale=1) const;
+#endif
 
     /** @brief Computes a cross-product of two 3-element vectors.
 
@@ -1376,6 +1390,7 @@ public:
      */
     double dot(InputArray m) const;
 
+#if OPENCV_ENABLE_MATEXPR
     /** @brief Returns a zero array of the specified size and type.
 
     The method returns a Matlab-style zero array initializer. It can be used to quickly form a constant
@@ -1457,6 +1472,7 @@ public:
     @param type Created matrix type.
     */
     CV_NODISCARD_STD static MatExpr eye(Size size, int type);
+#endif
 
     /** @brief Allocates new array data if needed.
 
@@ -2264,8 +2280,10 @@ public:
     Mat_(const Mat_& m, const Range* ranges);
     //! selects a submatrix, n-dim version
     Mat_(const Mat_& m, const std::vector<Range>& ranges);
+#if OPENCV_ENABLE_MATEXPR
     //! from a matrix expression
     explicit Mat_(const MatExpr& e);
+#endif
     //! makes a matrix out of Vec, std::vector, Point_ or Point3_. The matrix will have a single column
     explicit Mat_(const std::vector<_Tp>& vec, bool copyData=false);
     template<int n> explicit Mat_(const Vec<typename DataType<_Tp>::channel_type, n>& vec, bool copyData=true);
@@ -2283,8 +2301,10 @@ public:
     Mat_& operator = (const Mat_& m);
     //! set all the elements to s.
     Mat_& operator = (const _Tp& s);
+#if OPENCV_ENABLE_MATEXPR
     //! assign a matrix expression
     Mat_& operator = (const MatExpr& e);
+#endif
 
     //! iterators; they are smart enough to skip gaps in the end of rows
     iterator begin();
@@ -2331,6 +2351,7 @@ public:
     //! returns step()/sizeof(_Tp)
     size_t stepT(int i=0) const;
 
+#if OPENCV_ENABLE_MATEXPR
     //! overridden forms of Mat::zeros() etc. Data type is omitted, of course
     CV_NODISCARD_STD static MatExpr zeros(int rows, int cols);
     CV_NODISCARD_STD static MatExpr zeros(Size size);
@@ -2340,6 +2361,7 @@ public:
     CV_NODISCARD_STD static MatExpr ones(int _ndims, const int* _sizes);
     CV_NODISCARD_STD static MatExpr eye(int rows, int cols);
     CV_NODISCARD_STD static MatExpr eye(Size size);
+#endif
 
     //! some more overridden methods
     Mat_& adjustROI( int dtop, int dbottom, int dleft, int dright );
@@ -2395,7 +2417,9 @@ public:
     Mat_(Mat&& m);
     Mat_& operator = (Mat&& m);
 
+#if OPENCV_ENABLE_MATEXPR
     Mat_(MatExpr&& e);
+#endif
 };
 
 typedef Mat_<uchar> Mat1b;
@@ -3491,306 +3515,15 @@ protected:
     size_t idx;
 };
 
-
-
-///////////////////////////////// Matrix Expressions /////////////////////////////////
-
-class CV_EXPORTS MatOp
-{
-public:
-    MatOp();
-    virtual ~MatOp();
-
-    virtual bool elementWise(const MatExpr& expr) const;
-    virtual void assign(const MatExpr& expr, Mat& m, int type=-1) const = 0;
-    virtual void roi(const MatExpr& expr, const Range& rowRange,
-                     const Range& colRange, MatExpr& res) const;
-    virtual void diag(const MatExpr& expr, int d, MatExpr& res) const;
-    virtual void augAssignAdd(const MatExpr& expr, Mat& m) const;
-    virtual void augAssignSubtract(const MatExpr& expr, Mat& m) const;
-    virtual void augAssignMultiply(const MatExpr& expr, Mat& m) const;
-    virtual void augAssignDivide(const MatExpr& expr, Mat& m) const;
-    virtual void augAssignAnd(const MatExpr& expr, Mat& m) const;
-    virtual void augAssignOr(const MatExpr& expr, Mat& m) const;
-    virtual void augAssignXor(const MatExpr& expr, Mat& m) const;
-
-    virtual void add(const MatExpr& expr1, const MatExpr& expr2, MatExpr& res) const;
-    virtual void add(const MatExpr& expr1, const Scalar& s, MatExpr& res) const;
-
-    virtual void subtract(const MatExpr& expr1, const MatExpr& expr2, MatExpr& res) const;
-    virtual void subtract(const Scalar& s, const MatExpr& expr, MatExpr& res) const;
-
-    virtual void multiply(const MatExpr& expr1, const MatExpr& expr2, MatExpr& res, double scale=1) const;
-    virtual void multiply(const MatExpr& expr1, double s, MatExpr& res) const;
-
-    virtual void divide(const MatExpr& expr1, const MatExpr& expr2, MatExpr& res, double scale=1) const;
-    virtual void divide(double s, const MatExpr& expr, MatExpr& res) const;
-
-    virtual void abs(const MatExpr& expr, MatExpr& res) const;
-
-    virtual void transpose(const MatExpr& expr, MatExpr& res) const;
-    virtual void matmul(const MatExpr& expr1, const MatExpr& expr2, MatExpr& res) const;
-    virtual void invert(const MatExpr& expr, int method, MatExpr& res) const;
-
-    virtual Size size(const MatExpr& expr) const;
-    virtual int type(const MatExpr& expr) const;
-};
-
-/** @brief Matrix expression representation
-@anchor MatrixExpressions
-This is a list of implemented matrix operations that can be combined in arbitrary complex
-expressions (here A, B stand for matrices ( Mat ), s for a scalar ( Scalar ), alpha for a
-real-valued scalar ( double )):
--   Addition, subtraction, negation: `A+B`, `A-B`, `A+s`, `A-s`, `s+A`, `s-A`, `-A`
--   Scaling: `A*alpha`
--   Per-element multiplication and division: `A.mul(B)`, `A/B`, `alpha/A`
--   Matrix multiplication: `A*B`
--   Transposition: `A.t()` (means A<sup>T</sup>)
--   Matrix inversion and pseudo-inversion, solving linear systems and least-squares problems:
-    `A.inv([method]) (~ A<sup>-1</sup>)`,   `A.inv([method])*B (~ X: AX=B)`
--   Comparison: `A cmpop B`, `A cmpop alpha`, `alpha cmpop A`, where *cmpop* is one of
-  `>`, `>=`, `==`, `!=`, `<=`, `<`. The result of comparison is an 8-bit single channel mask whose
-    elements are set to 255 (if the particular element or pair of elements satisfy the condition) or
-    0.
--   Bitwise logical operations: `A logicop B`, `A logicop s`, `s logicop A`, `~A`, where *logicop* is one of
-  `&`, `|`, `^`.
--   Element-wise minimum and maximum: `min(A, B)`, `min(A, alpha)`, `max(A, B)`, `max(A, alpha)`
--   Element-wise absolute value: `abs(A)`
--   Cross-product, dot-product: `A.cross(B)`, `A.dot(B)`
--   Any function of matrix or matrices and scalars that returns a matrix or a scalar, such as norm,
-    mean, sum, countNonZero, trace, determinant, repeat, and others.
--   Matrix initializers ( Mat::eye(), Mat::zeros(), Mat::ones() ), matrix comma-separated
-    initializers, matrix constructors and operators that extract sub-matrices (see Mat description).
--   Mat_<destination_type>() constructors to cast the result to the proper type.
-@note Comma-separated initializers and probably some other operations may require additional
-explicit Mat() or Mat_<T>() constructor calls to resolve a possible ambiguity.
-
-Here are examples of matrix expressions:
-@code
-    // compute pseudo-inverse of A, equivalent to A.inv(DECOMP_SVD)
-    SVD svd(A);
-    Mat pinvA = svd.vt.t()*Mat::diag(1./svd.w)*svd.u.t();
-
-    // compute the new vector of parameters in the Levenberg-Marquardt algorithm
-    x -= (A.t()*A + lambda*Mat::eye(A.cols,A.cols,A.type())).inv(DECOMP_CHOLESKY)*(A.t()*err);
-
-    // sharpen image using "unsharp mask" algorithm
-    Mat blurred; double sigma = 1, threshold = 5, amount = 1;
-    GaussianBlur(img, blurred, Size(), sigma, sigma);
-    Mat lowContrastMask = abs(img - blurred) < threshold;
-    Mat sharpened = img*(1+amount) + blurred*(-amount);
-    img.copyTo(sharpened, lowContrastMask);
-@endcode
-*/
-class CV_EXPORTS MatExpr
-{
-public:
-    MatExpr();
-    explicit MatExpr(const Mat& m);
-
-    MatExpr(const MatOp* _op, int _flags, const Mat& _a = Mat(), const Mat& _b = Mat(),
-            const Mat& _c = Mat(), double _alpha = 1, double _beta = 1, const Scalar& _s = Scalar());
-
-    operator Mat() const;
-    template<typename _Tp> operator Mat_<_Tp>() const;
-
-    Size size() const;
-    int type() const;
-
-    MatExpr row(int y) const;
-    MatExpr col(int x) const;
-    MatExpr diag(int d = 0) const;
-    MatExpr operator()( const Range& rowRange, const Range& colRange ) const;
-    MatExpr operator()( const Rect& roi ) const;
-
-    MatExpr t() const;
-    MatExpr inv(int method = DECOMP_LU) const;
-    MatExpr mul(const MatExpr& e, double scale=1) const;
-    MatExpr mul(const Mat& m, double scale=1) const;
-
-    Mat cross(const Mat& m) const;
-    double dot(const Mat& m) const;
-
-    void swap(MatExpr& b);
-
-    const MatOp* op;
-    int flags;
-
-    Mat a, b, c;
-    double alpha, beta;
-    Scalar s;
-};
-
 //! @} core_basic
 
-//! @relates cv::MatExpr
-//! @{
-CV_EXPORTS MatExpr operator + (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator + (const Mat& a, const Scalar& s);
-CV_EXPORTS MatExpr operator + (const Scalar& s, const Mat& a);
-CV_EXPORTS MatExpr operator + (const MatExpr& e, const Mat& m);
-CV_EXPORTS MatExpr operator + (const Mat& m, const MatExpr& e);
-CV_EXPORTS MatExpr operator + (const MatExpr& e, const Scalar& s);
-CV_EXPORTS MatExpr operator + (const Scalar& s, const MatExpr& e);
-CV_EXPORTS MatExpr operator + (const MatExpr& e1, const MatExpr& e2);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator + (const Mat& a, const Matx<_Tp, m, n>& b) { return a + Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator + (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) + b; }
-
-CV_EXPORTS MatExpr operator - (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator - (const Mat& a, const Scalar& s);
-CV_EXPORTS MatExpr operator - (const Scalar& s, const Mat& a);
-CV_EXPORTS MatExpr operator - (const MatExpr& e, const Mat& m);
-CV_EXPORTS MatExpr operator - (const Mat& m, const MatExpr& e);
-CV_EXPORTS MatExpr operator - (const MatExpr& e, const Scalar& s);
-CV_EXPORTS MatExpr operator - (const Scalar& s, const MatExpr& e);
-CV_EXPORTS MatExpr operator - (const MatExpr& e1, const MatExpr& e2);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator - (const Mat& a, const Matx<_Tp, m, n>& b) { return a - Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator - (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) - b; }
-
-CV_EXPORTS MatExpr operator - (const Mat& m);
-CV_EXPORTS MatExpr operator - (const MatExpr& e);
-
-CV_EXPORTS MatExpr operator * (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator * (const Mat& a, double s);
-CV_EXPORTS MatExpr operator * (double s, const Mat& a);
-CV_EXPORTS MatExpr operator * (const MatExpr& e, const Mat& m);
-CV_EXPORTS MatExpr operator * (const Mat& m, const MatExpr& e);
-CV_EXPORTS MatExpr operator * (const MatExpr& e, double s);
-CV_EXPORTS MatExpr operator * (double s, const MatExpr& e);
-CV_EXPORTS MatExpr operator * (const MatExpr& e1, const MatExpr& e2);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator * (const Mat& a, const Matx<_Tp, m, n>& b) { return a * Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator * (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) * b; }
-
-CV_EXPORTS MatExpr operator / (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator / (const Mat& a, double s);
-CV_EXPORTS MatExpr operator / (double s, const Mat& a);
-CV_EXPORTS MatExpr operator / (const MatExpr& e, const Mat& m);
-CV_EXPORTS MatExpr operator / (const Mat& m, const MatExpr& e);
-CV_EXPORTS MatExpr operator / (const MatExpr& e, double s);
-CV_EXPORTS MatExpr operator / (double s, const MatExpr& e);
-CV_EXPORTS MatExpr operator / (const MatExpr& e1, const MatExpr& e2);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator / (const Mat& a, const Matx<_Tp, m, n>& b) { return a / Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator / (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) / b; }
-
-CV_EXPORTS MatExpr operator < (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator < (const Mat& a, double s);
-CV_EXPORTS MatExpr operator < (double s, const Mat& a);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator < (const Mat& a, const Matx<_Tp, m, n>& b) { return a < Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator < (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) < b; }
-
-CV_EXPORTS MatExpr operator <= (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator <= (const Mat& a, double s);
-CV_EXPORTS MatExpr operator <= (double s, const Mat& a);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator <= (const Mat& a, const Matx<_Tp, m, n>& b) { return a <= Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator <= (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) <= b; }
-
-CV_EXPORTS MatExpr operator == (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator == (const Mat& a, double s);
-CV_EXPORTS MatExpr operator == (double s, const Mat& a);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator == (const Mat& a, const Matx<_Tp, m, n>& b) { return a == Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator == (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) == b; }
-
-CV_EXPORTS MatExpr operator != (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator != (const Mat& a, double s);
-CV_EXPORTS MatExpr operator != (double s, const Mat& a);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator != (const Mat& a, const Matx<_Tp, m, n>& b) { return a != Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator != (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) != b; }
-
-CV_EXPORTS MatExpr operator >= (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator >= (const Mat& a, double s);
-CV_EXPORTS MatExpr operator >= (double s, const Mat& a);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator >= (const Mat& a, const Matx<_Tp, m, n>& b) { return a >= Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator >= (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) >= b; }
-
-CV_EXPORTS MatExpr operator > (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator > (const Mat& a, double s);
-CV_EXPORTS MatExpr operator > (double s, const Mat& a);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator > (const Mat& a, const Matx<_Tp, m, n>& b) { return a > Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator > (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) > b; }
-
-CV_EXPORTS MatExpr operator & (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator & (const Mat& a, const Scalar& s);
-CV_EXPORTS MatExpr operator & (const Scalar& s, const Mat& a);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator & (const Mat& a, const Matx<_Tp, m, n>& b) { return a & Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator & (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) & b; }
-
-CV_EXPORTS MatExpr operator | (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator | (const Mat& a, const Scalar& s);
-CV_EXPORTS MatExpr operator | (const Scalar& s, const Mat& a);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator | (const Mat& a, const Matx<_Tp, m, n>& b) { return a | Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator | (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) | b; }
-
-CV_EXPORTS MatExpr operator ^ (const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr operator ^ (const Mat& a, const Scalar& s);
-CV_EXPORTS MatExpr operator ^ (const Scalar& s, const Mat& a);
-template<typename _Tp, int m, int n> static inline
-MatExpr operator ^ (const Mat& a, const Matx<_Tp, m, n>& b) { return a ^ Mat(b); }
-template<typename _Tp, int m, int n> static inline
-MatExpr operator ^ (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) ^ b; }
-
-CV_EXPORTS MatExpr operator ~(const Mat& m);
-
-CV_EXPORTS MatExpr min(const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr min(const Mat& a, double s);
-CV_EXPORTS MatExpr min(double s, const Mat& a);
-template<typename _Tp, int m, int n> static inline
-MatExpr min (const Mat& a, const Matx<_Tp, m, n>& b) { return min(a, Mat(b)); }
-template<typename _Tp, int m, int n> static inline
-MatExpr min (const Matx<_Tp, m, n>& a, const Mat& b) { return min(Mat(a), b); }
-
-CV_EXPORTS MatExpr max(const Mat& a, const Mat& b);
-CV_EXPORTS MatExpr max(const Mat& a, double s);
-CV_EXPORTS MatExpr max(double s, const Mat& a);
-template<typename _Tp, int m, int n> static inline
-MatExpr max (const Mat& a, const Matx<_Tp, m, n>& b) { return max(a, Mat(b)); }
-template<typename _Tp, int m, int n> static inline
-MatExpr max (const Matx<_Tp, m, n>& a, const Mat& b) { return max(Mat(a), b); }
-
-/** @brief Calculates an absolute value of each matrix element.
-
-abs is a meta-function that is expanded to one of absdiff or convertScaleAbs forms:
-- C = abs(A-B) is equivalent to `absdiff(A, B, C)`
-- C = abs(A) is equivalent to `absdiff(A, Scalar::all(0), C)`
-- C = `Mat_<Vec<uchar,n> >(abs(A*alpha + beta))` is equivalent to `convertScaleAbs(A, C, alpha,
-beta)`
-
-The output matrix has the same size and the same type as the input one except for the last case,
-where C is depth=CV_8U .
-@param m matrix.
-@sa @ref MatrixExpressions, absdiff, convertScaleAbs
- */
-CV_EXPORTS MatExpr abs(const Mat& m);
-/** @overload
-@param e matrix expression.
-*/
-CV_EXPORTS MatExpr abs(const MatExpr& e);
-//! @} relates cv::MatExpr
 
 } // cv
+
+
+#if OPENCV_ENABLE_MATEXPR
+#include "opencv2/core/matexpr.hpp"
+#endif
 
 #include "opencv2/core/mat.inl.hpp"
 
