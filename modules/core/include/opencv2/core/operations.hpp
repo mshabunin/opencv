@@ -607,6 +607,99 @@ partition( const std::vector<_Tp>& _vec, std::vector<int>& labels,
     return nclasses;
 }
 
+//==============================================================================
+// Operators from MatExpr
+
+// Arithmetics
+#define CV_MAT_AUG_OPERATOR_ARITH(op, fun) \
+inline static \
+Mat operator op (const Mat& a, const Mat& b) { Mat res; fun(a, b, res); return res; } \
+inline static \
+Mat operator op (const Mat& a, const Scalar& s) { Mat res; fun(a, s, res); return res; } \
+inline static \
+Mat operator op (const Scalar& s, const Mat& a) { Mat res; fun(s, a, res); return res; } \
+template<typename _Tp, int m, int n> static inline \
+Mat operator op (const Mat& a, const Matx<_Tp, m, n>& b) { return a op Mat(b); } \
+template<typename _Tp, int m, int n> static inline \
+Mat operator op (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) op b; }
+
+CV_MAT_AUG_OPERATOR_ARITH(+, add);
+CV_MAT_AUG_OPERATOR_ARITH(-, subtract);
+#undef CV_MAT_AUG_OPERATOR_ARITH
+
+inline static Mat operator - (const Mat& m) { return 0 - m; }
+
+
+inline static
+Mat operator * (const Mat& a, const Mat& b) { Mat res; gemm(a, b, 1., noArray(), 1., res); return res; }
+inline static
+Mat operator * (const Mat& a, double s) { Mat res; multiply(a, s, res); return res; }
+inline static
+Mat operator * (double s, const Mat& a) { Mat res; multiply(s, a, res); return res; }
+template<typename _Tp, int m, int n> static inline
+Mat operator * (const Mat& a, const Matx<_Tp, m, n>& b) { return a * Mat(b); }
+template<typename _Tp, int m, int n> static inline
+Mat operator * (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) * b; }
+
+
+
+
+inline static
+Mat operator / (const Mat& a, const Mat& b) { Mat res; divide(a, b, res); return res; }
+inline static
+Mat operator / (const Mat& a, double s) { Mat res; divide(a, s, res); return res; }
+inline static
+Mat operator / (double s, const Mat& a) { Mat res; divide(s, a, res); return res; }
+template<typename _Tp, int m, int n> static inline
+Mat operator / (const Mat& a, const Matx<_Tp, m, n>& b) { return a / Mat(b); }
+template<typename _Tp, int m, int n> static inline
+Mat operator / (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) / b; }
+
+
+
+// Compare
+#define CV_MAT_AUG_OPERATOR_CMP(op, cvop) \
+inline static \
+Mat operator op (const Mat& a, const Mat& b) { Mat res; compare(a, b, res, cvop); return res; } \
+inline static \
+Mat operator op (const Mat& a, double s) { Mat res; compare(a, s, res, cvop); return res; } \
+inline static \
+Mat operator op (double s, const Mat& a) { Mat res; compare(s, a, res, cvop); return res; } \
+template<typename _Tp, int m, int n> static inline \
+Mat operator op (const Mat& a, const Matx<_Tp, m, n>& b) { return a op Mat(b); } \
+template<typename _Tp, int m, int n> static inline \
+Mat operator op (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) op b; }
+
+CV_MAT_AUG_OPERATOR_CMP(>, CMP_GT);
+CV_MAT_AUG_OPERATOR_CMP(>=, CMP_GE);
+CV_MAT_AUG_OPERATOR_CMP(<, CMP_LT);
+CV_MAT_AUG_OPERATOR_CMP(<=, CMP_LE);
+CV_MAT_AUG_OPERATOR_CMP(==, CMP_EQ);
+CV_MAT_AUG_OPERATOR_CMP(!=, CMP_NE);
+#undef CV_MAT_AUG_OPERATOR_CMP
+
+// Logic
+#define CV_MAT_AUG_OPERATORS_LOGIC(op, cvop) \
+inline static \
+Mat operator op (const Mat& a, const Mat& b) { Mat res; cvop(a, b, res); return res; } \
+inline static \
+Mat operator op (const Mat& a, const Scalar& s) { Mat res; cvop(a, s, res); return res; } \
+inline static \
+Mat operator op (const Scalar& s, const Mat& a) { Mat res; cvop(s, a, res); return res; } \
+template<typename _Tp, int m, int n> static inline \
+Mat operator op (const Mat& a, const Matx<_Tp, m, n>& b) { return a op Mat(b); } \
+template<typename _Tp, int m, int n> static inline \
+Mat operator op (const Matx<_Tp, m, n>& a, const Mat& b) { return Mat(a) op b; }
+
+CV_MAT_AUG_OPERATORS_LOGIC(&, bitwise_and);
+CV_MAT_AUG_OPERATORS_LOGIC(|, bitwise_or);
+CV_MAT_AUG_OPERATORS_LOGIC(^, bitwise_xor);
+#undef CV_MAT_AUG_OPERATORS_LOGIC
+
+inline static Mat operator ~ (const Mat& a) { Mat res; bitwise_not(a, res); return res; }
+
+
+
 } // cv
 
 #endif

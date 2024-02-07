@@ -49,7 +49,8 @@
 #endif
 
 #ifndef OPENCV_ENABLE_MATEXPR
-#define OPENCV_ENABLE_MATEXPR 1
+// #define OPENCV_ENABLE_MATEXPR 1
+#define OPENCV_ENABLE_MATEXPR 2
 #endif
 
 #include "opencv2/core/matx.hpp"
@@ -3516,7 +3517,6 @@ protected:
 };
 
 //! @} core_basic
-
 
 } // cv
 

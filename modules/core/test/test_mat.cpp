@@ -1999,23 +1999,6 @@ TEST(Core_InputArray, support_CustomType)
     }
 }
 
-#if OPENCV_ENABLE_MATEXPR
-
-TEST(Core_InputArray, fetch_MatExpr)
-{
-    Mat a(Size(10, 5), CV_32FC1, 5);
-    Mat b(Size(10, 5), CV_32FC1, 2);
-    MatExpr expr = a * b.t();                    // gemm expression
-    Mat dst;
-    cv::add(expr, Scalar(1), dst);               // invoke gemm() here
-    void* expr_data = expr.a.data;
-    Mat result = expr;                           // should not call gemm() here again
-    EXPECT_EQ(expr_data, result.data);           // expr data is reused
-    EXPECT_EQ(dst.size(), result.size());
-}
-
-#endif
-
 class TestInputArrayRangeChecking {
     static const char *kind2str(cv::_InputArray ia)
     {
@@ -2194,61 +2177,6 @@ TEST(Core_Vectors, issue_13078_workaround)
     ASSERT_EQ(5, ints[2]);
     ASSERT_EQ(7, ints[3]);
 }
-
-#if OPENCV_ENABLE_MATEXPR
-
-TEST(Core_MatExpr, issue_13926)
-{
-    Mat M1 = (Mat_<double>(4,4,CV_64FC1) << 1, 2, 3, 4,
-                                           5, 6, 7, 8,
-                                           9, 10, 11, 12,
-                                           13, 14, 15, 16);
-
-    Matx44d M2(1, 2, 3, 4,
-               5, 6, 7, 8,
-               9, 10, 11, 12,
-               13, 14, 15, 16);
-
-    EXPECT_GE(1e-6, cvtest::norm(M1*M2, M1*M1, NORM_INF)) << Mat(M1*M2) << std::endl << Mat(M1*M1);
-    EXPECT_GE(1e-6, cvtest::norm(M2*M1, M2*M2, NORM_INF)) << Mat(M2*M1) << std::endl << Mat(M2*M2);
-}
-
-TEST(Core_MatExpr, issue_16655)
-{
-    Mat a(Size(5, 5), CV_32FC3, Scalar::all(1));
-    Mat b(Size(5, 5), CV_32FC3, Scalar::all(2));
-    MatExpr ab_expr = a != b;
-    Mat ab_mat = ab_expr;
-    EXPECT_EQ(CV_8UC3, ab_expr.type())
-        << "MatExpr: CV_8UC3 != " << typeToString(ab_expr.type());
-    EXPECT_EQ(CV_8UC3, ab_mat.type())
-        << "Mat: CV_8UC3 != " << typeToString(ab_mat.type());
-}
-
-TEST(Core_MatExpr, issue_16689)
-{
-    Mat a(Size(10, 5), CV_32FC1, 5);
-    Mat b(Size(10, 5), CV_32FC1, 2);
-    Mat bt(Size(5, 10), CV_32FC1, 3);
-    {
-        MatExpr r = a * bt;  // gemm
-        EXPECT_EQ(Mat(r).size(), r.size()) << "[10x5] x [5x10] => [5x5]";
-    }
-    {
-        MatExpr r = a * b.t();  // gemm
-        EXPECT_EQ(Mat(r).size(), r.size()) << "[10x5] x [10x5].t() => [5x5]";
-    }
-    {
-        MatExpr r = a.t() * b;  // gemm
-        EXPECT_EQ(Mat(r).size(), r.size()) << "[10x5].t() x [10x5] => [10x10]";
-    }
-    {
-        MatExpr r = a.t() * bt.t();  // gemm
-        EXPECT_EQ(Mat(r).size(), r.size()) << "[10x5].t() x [5x10].t() => [10x10]";
-    }
-}
-
-#endif // OPENCV_ENABLE_MATEXPR
 
 #ifdef HAVE_EIGEN
 TEST(Core_Eigen, eigen2cv_check_Mat_type)
