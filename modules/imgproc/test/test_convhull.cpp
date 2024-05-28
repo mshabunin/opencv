@@ -1272,209 +1272,6 @@ CV_FitEllipseParallelTest::~CV_FitEllipseParallelTest(){
     pointsMat.release();
 }
 
-/****************************************************************************************\
-*                                   FitLine Test                                         *
-\****************************************************************************************/
-
-class CV_FitLineTest : public CV_BaseShapeDescrTest
-{
-public:
-    CV_FitLineTest();
-
-protected:
-    int prepare_test_case( int test_case_idx );
-    void generate_point_set( void* points );
-    void run_func(void);
-    int validate_test_results( int test_case_idx );
-    double max_noise;
-    AutoBuffer<float> line, line0;
-    int dist_type;
-    double reps, aeps;
-};
-
-
-CV_FitLineTest::CV_FitLineTest()
-{
-    min_log_size = 5; // for robust line fitting a dozen of points is needed at least
-    max_log_size = 10;
-    max_noise = 0.05;
-}
-
-void CV_FitLineTest::generate_point_set( void* pointsSet )
-{
-    RNG& rng = ts->get_rng();
-    int i, k, n, total, point_type;
-    CvSeqReader reader;
-    uchar* data = 0;
-    double s = 0;
-
-    n = dims;
-    for( k = 0; k < n; k++ )
-    {
-        line0[k+n] = (float)((low.val[k] + high.val[k])*0.5);
-        line0[k] = (float)(high.val[k] - low.val[k]);
-        if( cvtest::randInt(rng) % 2 )
-            line0[k] = -line0[k];
-        s += (double)line0[k]*line0[k];
-    }
-
-    s = 1./sqrt(s);
-    for( k = 0; k < n; k++ )
-        line0[k] = (float)(line0[k]*s);
-
-    memset( &reader, 0, sizeof(reader) );
-
-    if( CV_IS_SEQ(pointsSet) )
-    {
-        CvSeq* ptseq = (CvSeq*)pointsSet;
-        total = ptseq->total;
-        point_type = CV_MAT_DEPTH(CV_SEQ_ELTYPE(ptseq));
-        cvStartReadSeq( ptseq, &reader );
-    }
-    else
-    {
-        CvMat* ptm = (CvMat*)pointsSet;
-        CV_Assert( CV_IS_MAT(ptm) && CV_IS_MAT_CONT(ptm->type) );
-        total = ptm->rows + ptm->cols - 1;
-        point_type = CV_MAT_DEPTH(CV_MAT_TYPE(ptm->type));
-        data = ptm->data.ptr;
-    }
-
-    for( i = 0; i < total; i++ )
-    {
-        int* pi;
-        float* pf;
-        float p[4], t;
-        if( reader.ptr )
-        {
-            pi = (int*)reader.ptr;
-            pf = (float*)reader.ptr;
-            CV_NEXT_SEQ_ELEM( reader.seq->elem_size, reader );
-        }
-        else
-        {
-            pi = (int*)data + i*n;
-            pf = (float*)data + i*n;
-        }
-
-        t = (float)((cvtest::randReal(rng)-0.5)*low_high_range*2);
-
-        for( k = 0; k < n; k++ )
-        {
-            p[k] = (float)((cvtest::randReal(rng)-0.5)*max_noise*2 + t*line0[k] + line0[k+n]);
-
-            if( point_type == CV_32S )
-                pi[k] = cvRound(p[k]);
-            else
-                pf[k] = p[k];
-        }
-    }
-}
-
-int CV_FitLineTest::prepare_test_case( int test_case_idx )
-{
-    RNG& rng = ts->get_rng();
-    dims = cvtest::randInt(rng) % 2 + 2;
-    line.allocate(dims * 2);
-    line0.allocate(dims * 2);
-    min_log_size = MAX(min_log_size,5);
-    max_log_size = MAX(min_log_size,max_log_size);
-    int code = CV_BaseShapeDescrTest::prepare_test_case( test_case_idx );
-    dist_type = cvtest::randInt(rng) % 6 + 1;
-    dist_type += dist_type == cv::DIST_C;
-    reps = 0.1; aeps = 0.01;
-    return code;
-}
-
-
-void CV_FitLineTest::run_func()
-{
-    if(dims == 2)
-        cv::fitLine(cv::cvarrToMat(points), (cv::Vec4f&)line[0], dist_type, 0, reps, aeps);
-    else
-        cv::fitLine(cv::cvarrToMat(points), (cv::Vec6f&)line[0], dist_type, 0, reps, aeps);
-}
-
-int CV_FitLineTest::validate_test_results( int test_case_idx )
-{
-    int code = CV_BaseShapeDescrTest::validate_test_results( test_case_idx );
-    int k, max_k = 0;
-    double vec_diff = 0, t;
-
-    //std::cout << dims << " " << Mat(1, dims*2, CV_32FC1, line.data()) << " " << Mat(1, dims, CV_32FC1, line0.data()) << std::endl;
-
-    for( k = 0; k < dims*2; k++ )
-    {
-        if( cvIsNaN(line[k]) || cvIsInf(line[k]) )
-        {
-            ts->printf( cvtest::TS::LOG, "Some of the computed line parameters are invalid (line[%d]=%g)\n",
-                k, line[k] );
-            code = cvtest::TS::FAIL_INVALID_OUTPUT;
-            goto _exit_;
-        }
-    }
-
-    if( fabs(line0[1]) > fabs(line0[0]) )
-        max_k = 1;
-    if( fabs(line0[dims-1]) > fabs(line0[max_k]) )
-        max_k = dims-1;
-    if( line0[max_k] < 0 )
-        for( k = 0; k < dims; k++ )
-            line0[k] = -line0[k];
-    if( line[max_k] < 0 )
-        for( k = 0; k < dims; k++ )
-            line[k] = -line[k];
-
-    for( k = 0; k < dims; k++ )
-    {
-        double dt = line[k] - line0[k];
-        vec_diff += dt*dt;
-    }
-
-    if( sqrt(vec_diff) > 0.05 )
-    {
-        if( dims == 2 )
-            ts->printf( cvtest::TS::LOG,
-                "The computed line vector (%.2f,%.2f) is different from the actual (%.2f,%.2f)\n",
-                line[0], line[1], line0[0], line0[1] );
-        else
-            ts->printf( cvtest::TS::LOG,
-                "The computed line vector (%.2f,%.2f,%.2f) is different from the actual (%.2f,%.2f,%.2f)\n",
-                line[0], line[1], line[2], line0[0], line0[1], line0[2] );
-        code = cvtest::TS::FAIL_BAD_ACCURACY;
-        goto _exit_;
-    }
-
-    t = (line[max_k+dims] - line0[max_k+dims])/line0[max_k];
-    for( k = 0; k < dims; k++ )
-    {
-        double p = line0[k+dims] + t*line0[k] - line[k+dims];
-        vec_diff += p*p;
-    }
-
-    if( sqrt(vec_diff) > 1*MAX(fabs(t),1) )
-    {
-        if( dims == 2 )
-            ts->printf( cvtest::TS::LOG,
-                "The computed line point (%.2f,%.2f) is too far from the actual line\n",
-                line[2]+line0[2], line[3]+line0[3] );
-        else
-            ts->printf( cvtest::TS::LOG,
-                "The computed line point (%.2f,%.2f,%.2f) is too far from the actual line\n",
-                line[3]+line0[3], line[4]+line0[4], line[5]+line0[5] );
-        code = cvtest::TS::FAIL_BAD_ACCURACY;
-        goto _exit_;
-    }
-
-_exit_:
-
-    if( code < 0 )
-    {
-        ts->set_failed_test_info( code );
-    }
-    return code;
-}
-
 
 TEST(Imgproc_ConvexHull, accuracy) { CV_ConvHullTest test; test.safe_run(); }
 TEST(Imgproc_MinAreaRect, accuracy) { CV_MinAreaRectTest test; test.safe_run(); }
@@ -1483,7 +1280,6 @@ TEST(Imgproc_MinCircle, accuracy) { CV_MinCircleTest test; test.safe_run(); }
 TEST(Imgproc_MinCircle2, accuracy) { CV_MinCircleTest2 test; test.safe_run(); }
 TEST(Imgproc_FitEllipse, accuracy) { CV_FitEllipseTest test; test.safe_run(); }
 TEST(Imgproc_FitEllipse, parallel) { CV_FitEllipseParallelTest test; test.safe_run(); }
-TEST(Imgproc_FitLine, accuracy) { CV_FitLineTest test; test.safe_run(); }
 TEST(Imgproc_FitEllipse, small) { CV_FitEllipseSmallTest test; test.safe_run(); }
 
 
@@ -1911,6 +1707,85 @@ TEST(Imgproc_minEnclosingTriangle, regression_mat_with_diff_channels)
     EXPECT_NO_THROW(minEnclosingTriangle(points1xN, triangle));
     EXPECT_NO_THROW(minEnclosingTriangle(pointsNx1, triangle));
 }
+
+//==============================================================================
+
+typedef testing::TestWithParam<int> Imgproc_FitEllipse_Modes;
+
+TEST_P(Imgproc_FitEllipse_Modes, accuracy)
+{
+}
+
+INSTANTIATE_TEST_CASE_P(/**/,
+    Imgproc_FitEllipse_Modes,
+    testing::Values(CV_32FC2, CV_32SC2));
+
+//==============================================================================
+
+typedef testing::TestWithParam<tuple<int, int>> Imgproc_FitLine_Modes;
+
+TEST_P(Imgproc_FitLine_Modes, accuracy)
+{
+    const int data_type = get<0>(GetParam());
+    const int dist_type = get<1>(GetParam());
+    const int CN = CV_MAT_CN(data_type);
+    const int res_type = CV_32FC(CN);
+
+    for (int ITER = 0; ITER < 10; ++ITER)
+    {
+        SCOPED_TRACE(cv::format("iteration %d", ITER));
+
+        Mat v0(1, 1, data_type), v1(1, 1, data_type); // pt = v0 + v1 * t
+        Mat v1n;
+
+        RNG& rng = TS::ptr()->get_rng();
+        cvtest::randUni(rng, v0, Scalar::all(1), Scalar::all(100));
+        cvtest::randUni(rng, v1, Scalar::all(1), Scalar::all(100));
+        normalize(v1, v1n, 1, 0, NORM_L2, res_type);
+        v0.convertTo(v0, res_type);
+        v1.convertTo(v1, res_type);
+
+        const int NUM = rng.uniform(30, 100);
+        Mat points(NUM, 1, data_type, Scalar::all(0));
+        for (int i = 0; i < NUM; ++i)
+        {
+            Mat pt = v0 + v1 * i;
+            if (CV_MAT_DEPTH(data_type) == CV_32F)
+            {
+                Mat noise = cvtest::randomMat(rng, Size(1, 1), res_type, -0.01, 0.01, false);
+                pt += noise;
+
+            }
+            pt.copyTo(points.row(i));
+        }
+
+        Mat line_;
+        cv::fitLine(points, line_, dist_type, 0, 0.1, 0.01);
+        Mat line = line_.reshape(points.channels(), 1);
+
+        // check result type and size
+        EXPECT_EQ(res_type, line.type());
+        EXPECT_EQ(Size(2, 1), line.size());
+
+        // check result pt1
+        const double angle = line.col(0).dot(v1n);
+        EXPECT_NEAR(abs(angle), 1, 1e-2);
+
+        // put result pt0 to the original equation (pt = v0 + v1 * t) and find "t"
+        Mat diff = line.col(1) - v0;
+        cv::divide(diff, v1, diff);
+        cv::divide(diff, diff.at<float>(0), diff);
+        const Mat unit(1, 1, res_type, Scalar::all(1));
+        EXPECT_NEAR(cvtest::norm(diff, unit, NORM_L1), 0, 0.01);
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(/**/,
+    Imgproc_FitLine_Modes,
+    testing::Combine(
+        testing::Values(CV_32FC2, CV_32FC3, CV_32SC2, CV_32SC3),
+        testing::Values(DIST_L1, DIST_L2, DIST_L12, DIST_FAIR, DIST_WELSCH, DIST_HUBER)));
+
 
 }} // namespace
 /* End of file. */
