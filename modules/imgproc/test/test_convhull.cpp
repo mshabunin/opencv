@@ -39,8 +39,15 @@
 //
 //M*/
 
+#include "opencv2/core/base.hpp"
+#include "opencv2/core/types.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/ts.hpp"
+#include "opencv2/ts/cuda_test.hpp"
 #include "test_precomp.hpp"
 #include "opencv2/core/core_c.h"
+#include <cfloat>
+#include <cmath>
 
 namespace opencv_test { namespace {
 
@@ -1016,172 +1023,6 @@ TEST(Imgproc_minEnclosingCircle, regression_16051) {
     EXPECT_NEAR(2.1024551f, radius, 1e-3);
 }
 
-/****************************************************************************************\
-*                                   FitEllipse Test                                      *
-\****************************************************************************************/
-
-class CV_FitEllipseTest : public CV_BaseShapeDescrTest
-{
-public:
-    CV_FitEllipseTest();
-
-protected:
-    int prepare_test_case( int test_case_idx );
-    void generate_point_set( void* points );
-    void run_func(void);
-    int validate_test_results( int test_case_idx );
-    RotatedRect box0, box;
-    double min_ellipse_size, max_noise;
-};
-
-
-CV_FitEllipseTest::CV_FitEllipseTest()
-{
-    min_log_size = 5; // for robust ellipse fitting a dozen of points is needed at least
-    max_log_size = 10;
-    min_ellipse_size = 10;
-    max_noise = 0.05;
-}
-
-
-void CV_FitEllipseTest::generate_point_set( void* pointsSet )
-{
-    RNG& rng = ts->get_rng();
-    int i, total, point_type;
-    CvSeqReader reader;
-    uchar* data = 0;
-    double a, b;
-
-    box0.center.x = (float)((low.val[0] + high.val[0])*0.5);
-    box0.center.y = (float)((low.val[1] + high.val[1])*0.5);
-    box0.size.width = (float)(MAX(high.val[0] - low.val[0], min_ellipse_size)*2);
-    box0.size.height = (float)(MAX(high.val[1] - low.val[1], min_ellipse_size)*2);
-    box0.angle = (float)(cvtest::randReal(rng)*180);
-    a = cos(box0.angle*CV_PI/180.);
-    b = sin(box0.angle*CV_PI/180.);
-
-    if( box0.size.width > box0.size.height )
-    {
-        float t;
-        CV_SWAP( box0.size.width, box0.size.height, t );
-    }
-    memset( &reader, 0, sizeof(reader) );
-
-    if( CV_IS_SEQ(pointsSet) )
-    {
-        CvSeq* ptseq = (CvSeq*)pointsSet;
-        total = ptseq->total;
-        point_type = CV_SEQ_ELTYPE(ptseq);
-        cvStartReadSeq( ptseq, &reader );
-    }
-    else
-    {
-        CvMat* ptm = (CvMat*)pointsSet;
-        CV_Assert( CV_IS_MAT(ptm) && CV_IS_MAT_CONT(ptm->type) );
-        total = ptm->rows + ptm->cols - 1;
-        point_type = CV_MAT_TYPE(ptm->type);
-        data = ptm->data.ptr;
-    }
-
-    CV_Assert(point_type == CV_32SC2 || point_type == CV_32FC2);
-
-    for( i = 0; i < total; i++ )
-    {
-        CvPoint* pp;
-        CvPoint2D32f p = {0, 0};
-        double angle = cvtest::randReal(rng)*CV_PI*2;
-        double x = box0.size.height*0.5*(cos(angle) + (cvtest::randReal(rng)-0.5)*2*max_noise);
-        double y = box0.size.width*0.5*(sin(angle) + (cvtest::randReal(rng)-0.5)*2*max_noise);
-        p.x = (float)(box0.center.x + a*x + b*y);
-        p.y = (float)(box0.center.y - b*x + a*y);
-
-        if( reader.ptr )
-        {
-            pp = (CvPoint*)reader.ptr;
-            CV_NEXT_SEQ_ELEM( sizeof(*pp), reader );
-        }
-        else
-            pp = ((CvPoint*)data) + i;
-        if( point_type == CV_32SC2 )
-        {
-            pp->x = cvRound(p.x);
-            pp->y = cvRound(p.y);
-        }
-        else
-            *(CvPoint2D32f*)pp = p;
-    }
-}
-
-
-int CV_FitEllipseTest::prepare_test_case( int test_case_idx )
-{
-    min_log_size = MAX(min_log_size,4);
-    max_log_size = MAX(min_log_size,max_log_size);
-    return CV_BaseShapeDescrTest::prepare_test_case( test_case_idx );
-}
-
-
-void CV_FitEllipseTest::run_func()
-{
-    box = cv::fitEllipse(cv::cvarrToMat(points));
-}
-
-int CV_FitEllipseTest::validate_test_results( int test_case_idx )
-{
-    int code = CV_BaseShapeDescrTest::validate_test_results( test_case_idx );
-    double diff_angle;
-
-    if( cvIsNaN(box.center.x) || cvIsInf(box.center.x) ||
-        cvIsNaN(box.center.y) || cvIsInf(box.center.y) ||
-        cvIsNaN(box.size.width) || cvIsInf(box.size.width) ||
-        cvIsNaN(box.size.height) || cvIsInf(box.size.height) ||
-        cvIsNaN(box.angle) || cvIsInf(box.angle) )
-    {
-        ts->printf( cvtest::TS::LOG, "Some of the computed ellipse parameters are invalid (x=%g,y=%g,w=%g,h=%g,angle=%g)\n",
-            box.center.x, box.center.y, box.size.width, box.size.height, box.angle );
-        code = cvtest::TS::FAIL_INVALID_OUTPUT;
-        goto _exit_;
-    }
-
-    box.angle = (float)(90-box.angle);
-    if( box.angle < 0 )
-        box.angle += 360;
-    if( box.angle > 360 )
-        box.angle -= 360;
-
-    if( fabs(box.center.x - box0.center.x) > 3 ||
-        fabs(box.center.y - box0.center.y) > 3 ||
-        fabs(box.size.width - box0.size.width) > 0.1*fabs(box0.size.width) ||
-        fabs(box.size.height - box0.size.height) > 0.1*fabs(box0.size.height) )
-    {
-        ts->printf( cvtest::TS::LOG, "The computed ellipse center and/or size are incorrect:\n\t"
-            "(x=%.1f,y=%.1f,w=%.1f,h=%.1f), while it should be (x=%.1f,y=%.1f,w=%.1f,h=%.1f)\n",
-            box.center.x, box.center.y, box.size.width, box.size.height,
-            box0.center.x, box0.center.y, box0.size.width, box0.size.height );
-        code = cvtest::TS::FAIL_BAD_ACCURACY;
-        goto _exit_;
-    }
-
-    diff_angle = fabs(box0.angle - box.angle);
-    diff_angle = MIN( diff_angle, fabs(diff_angle - 360));
-    diff_angle = MIN( diff_angle, fabs(diff_angle - 180));
-
-    if( box0.size.height >= 1.3*box0.size.width && diff_angle > 30 )
-    {
-        ts->printf( cvtest::TS::LOG, "Incorrect ellipse angle (=%1.f, should be %1.f)\n",
-            box.angle, box0.angle );
-        code = cvtest::TS::FAIL_BAD_ACCURACY;
-        goto _exit_;
-    }
-
-_exit_:
-
-    if( code < 0 )
-    {
-        ts->set_failed_test_info( code );
-    }
-    return code;
-}
 
 
 class CV_FitEllipseSmallTest : public cvtest::BaseTest
@@ -1215,71 +1056,12 @@ protected:
 };
 
 
-// Regression test for incorrect fitEllipse result reported in Bug #3989
-// Check edge cases for rotation angles of ellipse ([-180, 90, 0, 90, 180] degrees)
-class CV_FitEllipseParallelTest : public CV_FitEllipseTest
-{
-public:
-    CV_FitEllipseParallelTest();
-    ~CV_FitEllipseParallelTest();
-protected:
-    void generate_point_set( void* points );
-    void run_func(void);
-    Mat pointsMat;
-};
-
-CV_FitEllipseParallelTest::CV_FitEllipseParallelTest()
-{
-    min_ellipse_size = 5;
-}
-
-void CV_FitEllipseParallelTest::generate_point_set( void* )
-{
-    RNG& rng = ts->get_rng();
-    int height = (int)(MAX(high.val[0] - low.val[0], min_ellipse_size));
-    int width = (int)(MAX(high.val[1] - low.val[1], min_ellipse_size));
-    const int angle = ( (cvtest::randInt(rng) % 5) - 2 ) * 90;
-    const int dim = max(height, width);
-    const Point center = Point(dim*2, dim*2);
-
-    if( width > height )
-    {
-        int t;
-        CV_SWAP( width, height, t );
-    }
-
-    Mat image = Mat::zeros(dim*4, dim*4, CV_8UC1);
-    ellipse(image, center, Size(height, width), angle,
-            0, 360, Scalar(255, 0, 0), 1, 8);
-
-    box0.center.x = (float)center.x;
-    box0.center.y = (float)center.y;
-    box0.size.width = (float)width*2;
-    box0.size.height = (float)height*2;
-    box0.angle = (float)angle;
-
-    vector<vector<Point> > contours;
-    findContours(image, contours,  RETR_EXTERNAL,  CHAIN_APPROX_NONE);
-    Mat(contours[0]).convertTo(pointsMat, CV_32F);
-}
-
-void CV_FitEllipseParallelTest::run_func()
-{
-    box = cv::fitEllipse(pointsMat);
-}
-
-CV_FitEllipseParallelTest::~CV_FitEllipseParallelTest(){
-    pointsMat.release();
-}
-
 
 TEST(Imgproc_ConvexHull, accuracy) { CV_ConvHullTest test; test.safe_run(); }
 TEST(Imgproc_MinAreaRect, accuracy) { CV_MinAreaRectTest test; test.safe_run(); }
 TEST(Imgproc_MinTriangle, accuracy) { CV_MinTriangleTest test; test.safe_run(); }
 TEST(Imgproc_MinCircle, accuracy) { CV_MinCircleTest test; test.safe_run(); }
 TEST(Imgproc_MinCircle2, accuracy) { CV_MinCircleTest2 test; test.safe_run(); }
-TEST(Imgproc_FitEllipse, accuracy) { CV_FitEllipseTest test; test.safe_run(); }
-TEST(Imgproc_FitEllipse, parallel) { CV_FitEllipseParallelTest test; test.safe_run(); }
 TEST(Imgproc_FitEllipse, small) { CV_FitEllipseSmallTest test; test.safe_run(); }
 
 
@@ -1710,18 +1492,6 @@ TEST(Imgproc_minEnclosingTriangle, regression_mat_with_diff_channels)
 
 //==============================================================================
 
-typedef testing::TestWithParam<int> Imgproc_FitEllipse_Modes;
-
-TEST_P(Imgproc_FitEllipse_Modes, accuracy)
-{
-}
-
-INSTANTIATE_TEST_CASE_P(/**/,
-    Imgproc_FitEllipse_Modes,
-    testing::Values(CV_32FC2, CV_32SC2));
-
-//==============================================================================
-
 typedef testing::TestWithParam<tuple<int, int>> Imgproc_FitLine_Modes;
 
 TEST_P(Imgproc_FitLine_Modes, accuracy)
@@ -1785,6 +1555,107 @@ INSTANTIATE_TEST_CASE_P(/**/,
     testing::Combine(
         testing::Values(CV_32FC2, CV_32FC3, CV_32SC2, CV_32SC3),
         testing::Values(DIST_L1, DIST_L2, DIST_L12, DIST_FAIR, DIST_WELSCH, DIST_HUBER)));
+
+//==============================================================================
+
+inline float normAngle(float angle_deg)
+{
+    while (angle_deg < 0)
+        angle_deg += 180;
+    while (angle_deg > 180 - 0.01)
+        angle_deg -= 180;
+    return angle_deg;
+}
+
+inline float angleToDeg(float angle_rad)
+{
+    return angle_rad * 180 / M_PI;
+}
+
+inline float angleDiff(float a, float b)
+{
+    float res = a - b;
+    return normAngle(res);
+}
+
+typedef testing::TestWithParam<int> Imgproc_FitEllipse_Modes;
+
+TEST_P(Imgproc_FitEllipse_Modes, accuracy)
+{
+    const int data_type = GetParam();
+    const float int_scale = 1000.;
+    const Size sz(1, 2);
+    const Matx22f rot {0.f, -1.f, 1.f, 0.f};
+    RNG& rng = TS::ptr()->get_rng();
+
+    for (int ITER = 0; ITER < 20; ++ITER)
+    {
+        Mat f0(sz, CV_32FC1), f1(sz, CV_32FC1), f2(sz, CV_32FC1);
+        cvtest::randUni(rng, f0, Scalar::all(-10), Scalar::all(10));
+        cvtest::randUni(rng, f1, Scalar::all(-10), Scalar::all(10));
+        if (ITER % 4 == 0)
+        {
+            // 0/90 degrees case
+            f1.at<float>(0, 0) = 0.;
+        }
+        // f2 is orthogonal to f1 and scaled
+        f2 = rot * f1 * cvtest::randomDouble(0.01, 3);
+
+        const Point2f ref_center(f0.at<float>(0), f0.at<float>(1));
+        const Size2f ref_size(cvtest::norm(f1, NORM_L2) * 2, cvtest::norm(f2, NORM_L2) * 2);
+        const float ref_angle1 = angleToDeg(atan(f1.at<float>(1) / f1.at<float>(0)));
+        const float ref_angle2 = angleToDeg(atan(f2.at<float>(1) / f2.at<float>(0)));
+
+        const int NUM = rng.uniform(10, 30);
+        Mat points(NUM, 1, data_type, Scalar::all(0));
+        for (int i = 0; i < NUM; ++i)
+        {
+            if (data_type == CV_32SC2)
+            {
+                Mat pt = f0 + f1 * sin(i) + f2 * cos(i);
+                pt = pt.reshape(2);
+                pt.convertTo(points.row(i), CV_32SC2, int_scale);
+            }
+            else if (data_type == CV_32FC2)
+            {
+                Mat pt = f0 + f1 * sin(i) + f2 * cos(i);
+                pt = pt.reshape(2);
+                pt.copyTo(points.row(i));
+            }
+        }
+
+        RotatedRect res = fitEllipse(points);
+
+        if (data_type == CV_32SC2)
+        {
+            res.center /= int_scale;
+            res.size = Size(res.size.width / int_scale, res.size.height / int_scale);
+        }
+        const bool sizeSwap = (res.size.width < res.size.height) != (ref_size.width < ref_size.height);
+        if (sizeSwap)
+        {
+            swap(res.size.width, res.size.height);
+        }
+        EXPECT_POINT2_NEAR(res.center, ref_center, 0.01);
+        const float sizeDiff = (data_type == CV_32FC2) ? 0.1 : 1;
+        EXPECT_NEAR(min(res.size.width, res.size.height), min(ref_size.width, ref_size.height), sizeDiff);
+        EXPECT_NEAR(max(res.size.width, res.size.height), max(ref_size.width, ref_size.height), sizeDiff);
+        if (sizeSwap)
+        {
+            EXPECT_LE(angleDiff(ref_angle2, res.angle), 0.1);
+        }
+        else
+        {
+            EXPECT_LE(angleDiff(ref_angle1, res.angle), 0.1);
+        }
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(/**/,
+    Imgproc_FitEllipse_Modes,
+        testing::Values(CV_32FC2, CV_32SC2));
+
+//==============================================================================
 
 
 }} // namespace
