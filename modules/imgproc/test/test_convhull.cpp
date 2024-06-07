@@ -371,101 +371,6 @@ int CV_BaseShapeDescrTest::validate_test_results( int /*test_case_idx*/ )
     return 0;
 }
 
-/****************************************************************************************\
-*                                     MinAreaRect Test                                   *
-\****************************************************************************************/
-
-class CV_MinAreaRectTest : public CV_BaseShapeDescrTest
-{
-public:
-    CV_MinAreaRectTest();
-
-protected:
-    void run_func(void);
-    int validate_test_results( int test_case_idx );
-
-    Point2f box_pt[4];
-};
-
-
-CV_MinAreaRectTest::CV_MinAreaRectTest()
-{
-}
-
-
-void CV_MinAreaRectTest::run_func()
-{
-    cv::RotatedRect r = cv::minAreaRect(cv::cvarrToMat(points));
-    r.points(box_pt);
-}
-
-
-int CV_MinAreaRectTest::validate_test_results( int test_case_idx )
-{
-    double eps = 1e-1;
-    int code = CV_BaseShapeDescrTest::validate_test_results( test_case_idx );
-    int i, j, point_count = points2->rows + points2->cols - 1;
-    CvPoint2D32f *p = (CvPoint2D32f*)(points2->data.ptr);
-    int mask[] = {0,0,0,0};
-
-    // check that the bounding box is a rotated rectangle:
-    //  1. diagonals should be equal
-    //  2. they must intersect in their middle points
-    {
-        double d0 = cvTsDist( box_pt[0], box_pt[2] );
-        double d1 = cvTsDist( box_pt[1], box_pt[3] );
-
-        double x0 = (box_pt[0].x + box_pt[2].x)*0.5;
-        double y0 = (box_pt[0].y + box_pt[2].y)*0.5;
-        double x1 = (box_pt[1].x + box_pt[3].x)*0.5;
-        double y1 = (box_pt[1].y + box_pt[3].y)*0.5;
-
-        if( fabs(d0 - d1) + fabs(x0 - x1) + fabs(y0 - y1) > eps*MAX(d0,d1) )
-        {
-            ts->printf( cvtest::TS::LOG, "The bounding box is not a rectangle\n" );
-            code = cvtest::TS::FAIL_INVALID_OUTPUT;
-            goto _exit_;
-        }
-    }
-
-    // check that the box includes all the points
-    // and there is at least one point at (or very close to) every box side
-    for( i = 0; i < point_count; i++ )
-    {
-        int idx = 0, on_edge = 0;
-        double pptresult = cvTsPointPolygonTest( p[i], box_pt, 4, &idx, &on_edge );
-        if( pptresult < -eps )
-        {
-            ts->printf( cvtest::TS::LOG, "The point #%d is outside of the box\n", i );
-            code = cvtest::TS::FAIL_BAD_ACCURACY;
-            goto _exit_;
-        }
-
-        if( pptresult < eps )
-        {
-            for( j = 0; j < 4; j++ )
-            {
-                double d = cvTsPtLineDist( p[i], box_pt[(j-1)&3], box_pt[j] );
-                if( d < eps )
-                    mask[j] = (uchar)1;
-            }
-        }
-    }
-
-    if( mask[0] + mask[1] + mask[2] + mask[3] != 4 )
-    {
-        ts->printf( cvtest::TS::LOG, "Not every box side has a point nearby\n" );
-        code = cvtest::TS::FAIL_BAD_ACCURACY;
-        goto _exit_;
-    }
-
-_exit_:
-
-    if( code < 0 )
-        ts->set_failed_test_info( code );
-    return code;
-}
-
 
 /****************************************************************************************\
 *                                   MinEnclosingTriangle Test                            *
@@ -826,13 +731,10 @@ protected:
 };
 
 
-
-TEST(Imgproc_MinAreaRect, accuracy) { CV_MinAreaRectTest test; test.safe_run(); }
 TEST(Imgproc_MinTriangle, accuracy) { CV_MinTriangleTest test; test.safe_run(); }
 TEST(Imgproc_MinCircle, accuracy) { CV_MinCircleTest test; test.safe_run(); }
 TEST(Imgproc_MinCircle2, accuracy) { CV_MinCircleTest2 test; test.safe_run(); }
 TEST(Imgproc_FitEllipse, small) { CV_FitEllipseSmallTest test; test.safe_run(); }
-
 
 
 PARAM_TEST_CASE(ConvexityDefects_regression_5908, bool, int)
@@ -1512,6 +1414,64 @@ INSTANTIATE_TEST_CASE_P(/**/,
     Imgproc_ConvexHull_Modes,
         testing::Values(CV_32FC2, CV_32SC2));
 
+
+//==============================================================================
+
+typedef testing::TestWithParam<int> Imgproc_MinAreaRect_Modes;
+
+TEST_P(Imgproc_MinAreaRect_Modes, accuracy)
+{
+    const int data_type = GetParam();
+    RNG & rng = TS::ptr()->get_rng();
+    for (int ITER = 0; ITER < 20; ++ITER)
+    {
+        SCOPED_TRACE(cv::format("iteration %d", ITER));
+
+        const int NUM = cvtest::randomInt(5, 100);
+        Mat points(NUM, 1, data_type, Scalar::all(0));
+        cvtest::randUni(rng, points, Scalar(-10), Scalar::all(10));
+
+        const RotatedRect res = cv::minAreaRect(points);
+        Point2f box_pts[4] {};
+        res.points(box_pts);
+
+        // check that the box contains all the points - all on one side
+        double common_side = 0.;
+        bool edgeHasPoint[4] {0};
+        for (int i = 0; i < 4; ++i)
+        {
+            const int j = (i == 3) ? 0 : i + 1;
+            Mat cur(1, 1, CV_32FC2, box_pts + i);
+            Mat next(1, 1, CV_32FC2, box_pts + j);
+            for (int k = 0; k < points.rows; ++k)
+            {
+                SCOPED_TRACE(cv::format("point %d", j));
+                Mat one_point;
+                points.row(k).convertTo(one_point, CV_32FC2);
+                const double side = getSide(cur, next, one_point);
+                if (abs(side) < 0.0001) // point on edge - no need to check
+                {
+                    edgeHasPoint[i] = true;
+                    continue;
+                }
+                if (common_side == 0.) // initial state
+                {
+                    common_side = side > 0 ? 1. : -1.; // only sign matters
+                }
+                else
+                {
+                    EXPECT_EQ(common_side > 0, side > 0) << common_side << ", " << side;
+                }
+            }
+        }
+        EXPECT_TRUE(edgeHasPoint[0] && edgeHasPoint[1] && edgeHasPoint[2] && edgeHasPoint[3]);
+    }
+
+}
+
+INSTANTIATE_TEST_CASE_P(/**/,
+    Imgproc_MinAreaRect_Modes,
+        testing::Values(CV_32FC2, CV_32SC2));
 
 }} // namespace
 /* End of file. */
