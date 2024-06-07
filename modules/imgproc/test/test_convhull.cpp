@@ -371,236 +371,6 @@ int CV_BaseShapeDescrTest::validate_test_results( int /*test_case_idx*/ )
     return 0;
 }
 
-
-/****************************************************************************************\
-*                                     Convex Hull Test                                   *
-\****************************************************************************************/
-
-class CV_ConvHullTest : public CV_BaseShapeDescrTest
-{
-public:
-    CV_ConvHullTest();
-    virtual ~CV_ConvHullTest();
-    void clear();
-
-protected:
-    void run_func(void);
-    int prepare_test_case( int test_case_idx );
-    int validate_test_results( int test_case_idx );
-
-    CvSeq* hull1;
-    CvMat* hull2;
-    bool clockwise;
-    int return_points;
-};
-
-
-CV_ConvHullTest::CV_ConvHullTest()
-{
-    hull1 = 0;
-    hull2 = 0;
-    return_points = 0;
-    clockwise = false;
-}
-
-
-CV_ConvHullTest::~CV_ConvHullTest()
-{
-    clear();
-}
-
-
-void CV_ConvHullTest::clear()
-{
-    CV_BaseShapeDescrTest::clear();
-    cvReleaseMat( &hull2 );
-    hull1 = 0;
-}
-
-
-int CV_ConvHullTest::prepare_test_case( int test_case_idx )
-{
-    int code = CV_BaseShapeDescrTest::prepare_test_case( test_case_idx );
-    RNG& rng = ts->get_rng();
-
-    if( code <= 0 )
-        return code;
-
-    clockwise = cvtest::randInt(rng) % 2 != 0;
-    return_points = cvtest::randInt(rng) % 2;
-
-    int rows, cols;
-    int sz = points1 ? points1->total : points2->cols + points2->rows - 1;
-    int point_type = points1 ? CV_SEQ_ELTYPE(points1) : CV_MAT_TYPE(points2->type);
-
-    if( cvtest::randInt(rng) % 2 )
-        rows = sz, cols = 1;
-    else
-        rows = 1, cols = sz;
-
-    hull2 = cvCreateMat( rows, cols, return_points ? point_type : CV_32SC1 );
-
-    return code;
-}
-
-
-void CV_ConvHullTest::run_func()
-{
-    cv::Mat _points = cv::cvarrToMat(points);
-    size_t n = 0;
-    if( !return_points )
-    {
-        std::vector<int> _hull;
-        cv::convexHull(_points, _hull, clockwise);
-        n = _hull.size();
-        memcpy(hull2->data.ptr, &_hull[0], n*sizeof(_hull[0]));
-    }
-    else if(_points.type() == CV_32SC2)
-    {
-        std::vector<cv::Point> _hull;
-        cv::convexHull(_points, _hull, clockwise);
-        n = _hull.size();
-        memcpy(hull2->data.ptr, &_hull[0], n*sizeof(_hull[0]));
-    }
-    else if(_points.type() == CV_32FC2)
-    {
-        std::vector<cv::Point2f> _hull;
-        cv::convexHull(_points, _hull, clockwise);
-        n = _hull.size();
-        memcpy(hull2->data.ptr, &_hull[0], n*sizeof(_hull[0]));
-    }
-    if(hull2->rows > hull2->cols)
-        hull2->rows = (int)n;
-    else
-        hull2->cols = (int)n;
-}
-
-
-int CV_ConvHullTest::validate_test_results( int test_case_idx )
-{
-    int code = CV_BaseShapeDescrTest::validate_test_results( test_case_idx );
-    CvMat* hull = 0;
-    CvMat* mask = 0;
-    int i, point_count, hull_count;
-    Point2f *p, *h;
-    CvSeq header, hheader, *ptseq, *hseq;
-    CvSeqBlock block, hblock;
-
-    if( points1 )
-        ptseq = points1;
-    else
-        ptseq = cvMakeSeqHeaderForArray( CV_MAT_TYPE(points2->type),
-            sizeof(CvSeq), CV_ELEM_SIZE(points2->type), points2->data.ptr,
-            points2->rows + points2->cols - 1, &header, &block );
-    point_count = ptseq->total;
-    p = (Point2f*)(points2->data.ptr);
-
-    if( hull1 )
-        hseq = hull1;
-    else
-        hseq = cvMakeSeqHeaderForArray( CV_MAT_TYPE(hull2->type),
-            sizeof(CvSeq), CV_ELEM_SIZE(hull2->type), hull2->data.ptr,
-            hull2->rows + hull2->cols - 1, &hheader, &hblock );
-    hull_count = hseq->total;
-    hull = cvCreateMat( 1, hull_count, CV_32FC2 );
-    mask = cvCreateMat( 1, hull_count, CV_8UC1 );
-    cvZero( mask );
-    Mat _mask = cvarrToMat(mask);
-
-    h = (Point2f*)(hull->data.ptr);
-
-    // extract convex hull points
-    if( return_points )
-    {
-        cvCvtSeqToArray( hseq, hull->data.ptr );
-        if( CV_SEQ_ELTYPE(hseq) != CV_32FC2 )
-        {
-            CvMat tmp = cvMat( hull->rows, hull->cols, CV_32SC2, hull->data.ptr );
-            cvConvert( &tmp, hull );
-        }
-    }
-    else
-    {
-        CvSeqReader reader;
-        cvStartReadSeq( hseq, &reader );
-
-        for( i = 0; i < hull_count; i++ )
-        {
-            schar* ptr = reader.ptr;
-            int idx;
-            CV_NEXT_SEQ_ELEM( hseq->elem_size, reader );
-
-            if( hull1 )
-                idx = cvSeqElemIdx( ptseq, *(uchar**)ptr );
-            else
-                idx = *(int*)ptr;
-
-            if( idx < 0 || idx >= point_count )
-            {
-                ts->printf( cvtest::TS::LOG, "Invalid convex hull point #%d\n", i );
-                code = cvtest::TS::FAIL_INVALID_OUTPUT;
-                goto _exit_;
-            }
-            h[i] = p[idx];
-        }
-    }
-
-    // check that the convex hull is a convex polygon
-    if( hull_count >= 3 )
-    {
-        Point2f pt0 = h[hull_count-1];
-        for( i = 0; i < hull_count; i++ )
-        {
-            int j = i+1;
-            Point2f pt1 = h[i], pt2 = h[j < hull_count ? j : 0];
-            float dx0 = pt1.x - pt0.x, dy0 = pt1.y - pt0.y;
-            float dx1 = pt2.x - pt1.x, dy1 = pt2.y - pt1.y;
-            double t = (double)dx0*dy1 - (double)dx1*dy0;
-            if( (t < 0) ^ clockwise )
-            {
-                ts->printf( cvtest::TS::LOG, "The convex hull is not convex or has a wrong orientation (vtx %d)\n", i );
-                code = cvtest::TS::FAIL_INVALID_OUTPUT;
-                goto _exit_;
-            }
-            pt0 = pt1;
-        }
-    }
-
-    // check that all the points are inside the hull or on the hull edge
-    // and at least hull_point points are at the hull vertices
-    for( i = 0; i < point_count; i++ )
-    {
-        int idx = 0, on_edge = 0;
-        double pptresult = cvTsPointPolygonTest( p[i], h, hull_count, &idx, &on_edge );
-
-        if( pptresult < 0 )
-        {
-            ts->printf( cvtest::TS::LOG, "The point #%d is outside of the convex hull\n", i );
-            code = cvtest::TS::FAIL_BAD_ACCURACY;
-            goto _exit_;
-        }
-
-        if( pptresult < FLT_EPSILON && !on_edge )
-            mask->data.ptr[idx] = (uchar)1;
-    }
-
-    if( cvtest::norm( _mask, Mat::zeros(_mask.dims, _mask.size, _mask.type()), NORM_L1 ) != hull_count )
-    {
-        ts->printf( cvtest::TS::LOG, "Not every convex hull vertex coincides with some input point\n" );
-        code = cvtest::TS::FAIL_BAD_ACCURACY;
-        goto _exit_;
-    }
-
-_exit_:
-
-    cvReleaseMat( &hull );
-    cvReleaseMat( &mask );
-    if( code < 0 )
-        ts->set_failed_test_info( code );
-    return code;
-}
-
-
 /****************************************************************************************\
 *                                     MinAreaRect Test                                   *
 \****************************************************************************************/
@@ -1057,7 +827,6 @@ protected:
 
 
 
-TEST(Imgproc_ConvexHull, accuracy) { CV_ConvHullTest test; test.safe_run(); }
 TEST(Imgproc_MinAreaRect, accuracy) { CV_MinAreaRectTest test; test.safe_run(); }
 TEST(Imgproc_MinTriangle, accuracy) { CV_MinTriangleTest test; test.safe_run(); }
 TEST(Imgproc_MinCircle, accuracy) { CV_MinCircleTest test; test.safe_run(); }
@@ -1501,7 +1270,7 @@ TEST_P(Imgproc_FitLine_Modes, accuracy)
     const int CN = CV_MAT_CN(data_type);
     const int res_type = CV_32FC(CN);
 
-    for (int ITER = 0; ITER < 10; ++ITER)
+    for (int ITER = 0; ITER < 20; ++ITER)
     {
         SCOPED_TRACE(cv::format("iteration %d", ITER));
 
@@ -1590,6 +1359,8 @@ TEST_P(Imgproc_FitEllipse_Modes, accuracy)
 
     for (int ITER = 0; ITER < 20; ++ITER)
     {
+        SCOPED_TRACE(cv::format("iteration %d", ITER));
+
         Mat f0(sz, CV_32FC1), f1(sz, CV_32FC1), f2(sz, CV_32FC1);
         cvtest::randUni(rng, f0, Scalar::all(-10), Scalar::all(10));
         cvtest::randUni(rng, f1, Scalar::all(-10), Scalar::all(10));
@@ -1656,6 +1427,90 @@ INSTANTIATE_TEST_CASE_P(/**/,
         testing::Values(CV_32FC2, CV_32SC2));
 
 //==============================================================================
+
+typedef testing::TestWithParam<int> Imgproc_ConvexHull_Modes;
+
+// points stored in rows
+inline static int findPointInMat(const Mat & data, const Mat & point)
+{
+    for (int i = 0; i < data.rows; ++i)
+        if (cvtest::norm(data.row(i), point, NORM_L1) == 0)
+            return i;
+    return -1;
+}
+
+// > 0 - "pt" is to the right of AB
+// < 0 - "pt" is to the left of AB
+// points stored in rows
+inline static double getSide(const Mat & ptA, const Mat & ptB, const Mat & pt)
+{
+    Mat d0 = pt - ptA, d1 = ptB - pt, prod;
+    vconcat(d0, d1, prod);
+    prod = prod.reshape(1);
+    if (prod.depth() == CV_32S)
+        prod.convertTo(prod, CV_32F);
+    return determinant(prod);
+}
+
+TEST_P(Imgproc_ConvexHull_Modes, accuracy)
+{
+    const int data_type = GetParam();
+    RNG & rng = TS::ptr()->get_rng();
+
+    for (int ITER = 0; ITER < 20; ++ITER)
+    {
+        SCOPED_TRACE(cv::format("iteration %d", ITER));
+
+        const int NUM = cvtest::randomInt(5, 100);
+        Mat points(NUM, 1, data_type, Scalar::all(0));
+        cvtest::randUni(rng, points, Scalar(-10), Scalar::all(10));
+
+        Mat hull, c_hull, indexes;
+        cv::convexHull(points, hull, false, true); // default parameters
+        cv::convexHull(points, c_hull, true, true); // counter-clockwise
+        cv::convexHull(points, indexes, false, false); // point indexes
+
+        ASSERT_EQ(hull.size().width, 1);
+        ASSERT_GE(hull.size().height, 3);
+        ASSERT_EQ(hull.size(), c_hull.size());
+        ASSERT_EQ(hull.size(), indexes.size());
+
+        // find shift between hull and counter-clockwise hull
+        const int c_diff = findPointInMat(hull, c_hull.row(0));
+        ASSERT_NE(c_diff, -1);
+
+        const int sz = hull.total();
+        for (int i = 0; i < sz; ++i)
+        {
+            SCOPED_TRACE(cv::format("vertex %d", i));
+
+            Mat prev = (i == 0) ? hull.row(sz - 1) : hull.row(i - 1);
+            Mat cur = hull.row(i);
+            Mat next = (i != sz - 1) ? hull.row(i + 1) : hull.row(0);
+            // 1. "cur' is one of points
+            EXPECT_NE(findPointInMat(points, cur), -1);
+            // 2. convexity: "cur" is on right side of "prev - next" edge
+            EXPECT_GE(getSide(prev, next, cur), 0);
+            // 3. all points are inside polygon - on the left side of "cur - next" edge
+            for (int j = 0; j < points.rows; ++j)
+            {
+                SCOPED_TRACE(cv::format("point %d", j));
+                EXPECT_LE(getSide(cur, next, points.row(j)), 0);
+            }
+            // check counter-clockwise hull
+            const int c_idx = (sz - i + c_diff) % sz;
+            Mat c_cur = c_hull.row(c_idx);
+            EXPECT_MAT_NEAR(cur, c_cur, 0);
+            // check indexed hull
+            const int pt_index = indexes.at<int>(i);
+            EXPECT_MAT_NEAR(cur, points.row(pt_index), 0);
+        }
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(/**/,
+    Imgproc_ConvexHull_Modes,
+        testing::Values(CV_32FC2, CV_32SC2));
 
 
 }} // namespace
