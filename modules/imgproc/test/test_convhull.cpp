@@ -273,130 +273,6 @@ int CV_BaseShapeDescrTest::validate_test_results( int /*test_case_idx*/ )
     return 0;
 }
 
-/****************************************************************************************\
-*                                     MinEnclosingCircle Test                            *
-\****************************************************************************************/
-
-class CV_MinCircleTest : public CV_BaseShapeDescrTest
-{
-public:
-    CV_MinCircleTest();
-
-protected:
-    void run_func(void);
-    int validate_test_results( int test_case_idx );
-
-    Point2f center;
-    float radius;
-};
-
-
-CV_MinCircleTest::CV_MinCircleTest()
-{
-}
-
-
-void CV_MinCircleTest::run_func()
-{
-    cv::minEnclosingCircle(cv::cvarrToMat(points), center, radius);
-}
-
-
-int CV_MinCircleTest::validate_test_results( int test_case_idx )
-{
-    double eps = 1.03;
-    int code = CV_BaseShapeDescrTest::validate_test_results( test_case_idx );
-    int i, j = 0, point_count = points2->rows + points2->cols - 1;
-    Point2f *p = (Point2f*)(points2->data.ptr);
-    Point2f v[3];
-
-    // check that the circle contains all the points inside and
-    // remember at most 3 points that are close to the boundary
-    for( i = 0; i < point_count; i++ )
-    {
-        double d = cvTsDist(p[i], center);
-        if( d > radius )
-        {
-            ts->printf( cvtest::TS::LOG, "The point #%d is outside of the circle\n", i );
-            code = cvtest::TS::FAIL_BAD_ACCURACY;
-            goto _exit_;
-        }
-
-        if( radius - d < eps*radius && j < 3 )
-            v[j++] = p[i];
-    }
-
-    if( point_count >= 2 && (j < 2 || (j == 2 && cvTsDist(v[0],v[1]) < (radius-1)*2/eps)) )
-    {
-        ts->printf( cvtest::TS::LOG,
-            "There should be at least 3 points near the circle boundary or 2 points on the diameter\n" );
-        code = cvtest::TS::FAIL_BAD_ACCURACY;
-        goto _exit_;
-    }
-
-_exit_:
-
-    if( code < 0 )
-        ts->set_failed_test_info( code );
-    return code;
-}
-
-/****************************************************************************************\
-*                                 MinEnclosingCircle Test 2                              *
-\****************************************************************************************/
-
-class CV_MinCircleTest2 : public CV_BaseShapeDescrTest
-{
-public:
-    CV_MinCircleTest2();
-protected:
-    RNG rng;
-    void run_func(void);
-    int validate_test_results( int test_case_idx );
-    float delta;
-};
-
-
-CV_MinCircleTest2::CV_MinCircleTest2()
-{
-    rng = ts->get_rng();
-}
-
-
-void CV_MinCircleTest2::run_func()
-{
-    Point2f center = Point2f(rng.uniform(0.0f, 1000.0f), rng.uniform(0.0f, 1000.0f));;
-    float radius = rng.uniform(0.0f, 500.0f);
-    float angle = (float)rng.uniform(0.0f, (float)(CV_2PI));
-    vector<Point2f> pts;
-    pts.push_back(center + Point2f(radius * cos(angle), radius * sin(angle)));
-    angle += (float)CV_PI;
-    pts.push_back(center + Point2f(radius * cos(angle), radius * sin(angle)));
-    float radius2 = radius * radius;
-    float x = rng.uniform(center.x - radius, center.x + radius);
-    float deltaX = x - center.x;
-    float upperBoundY = sqrt(radius2 - deltaX * deltaX);
-    float y = rng.uniform(center.y - upperBoundY, center.y + upperBoundY);
-    pts.push_back(Point2f(x, y));
-    // Find the minimum area enclosing circle
-    Point2f calcCenter;
-    float calcRadius;
-    minEnclosingCircle(pts, calcCenter, calcRadius);
-    delta = (float)cv::norm(calcCenter - center) + abs(calcRadius - radius);
-}
-
-int CV_MinCircleTest2::validate_test_results( int test_case_idx )
-{
-    float eps = 1.0F;
-    int code = CV_BaseShapeDescrTest::validate_test_results( test_case_idx );
-    if (delta > eps)
-    {
-        ts->printf( cvtest::TS::LOG, "Delta center and calcCenter > %f\n", eps );
-        code = cvtest::TS::FAIL_BAD_ACCURACY;
-        ts->set_failed_test_info( code );
-    }
-    return code;
-}
 
 /****************************************************************************************\
 *                                 minEnclosingCircle Test 3                              *
@@ -512,8 +388,6 @@ protected:
 };
 
 
-TEST(Imgproc_MinCircle, accuracy) { CV_MinCircleTest test; test.safe_run(); }
-TEST(Imgproc_MinCircle2, accuracy) { CV_MinCircleTest2 test; test.safe_run(); }
 TEST(Imgproc_FitEllipse, small) { CV_FitEllipseSmallTest test; test.safe_run(); }
 
 
@@ -1353,6 +1227,77 @@ INSTANTIATE_TEST_CASE_P(/**/,
     minEnclosingTriangle_Modes,
         testing::Values(CV_32FC2, CV_32SC2));
 
+//==============================================================================
+
+typedef testing::TestWithParam<int> minEnclosingCircle_Modes;
+
+TEST_P(minEnclosingCircle_Modes, accuracy)
+{
+    const int data_type = GetParam();
+    RNG & rng = TS::ptr()->get_rng();
+    for (int ITER = 0; ITER < 20; ++ITER)
+    {
+        SCOPED_TRACE(cv::format("iteration %d", ITER));
+
+        const int NUM = cvtest::randomInt(5, 100);
+        Mat points(NUM, 1, data_type, Scalar::all(0)), fpoints;
+        cvtest::randUni(rng, points, Scalar::all(-100), Scalar::all(100));
+        points.convertTo(fpoints, CV_32FC2);
+
+        Point2f center {};
+        float radius = 0.f;
+        cv::minEnclosingCircle(points, center, radius);
+
+        vector<int> boundPts; // indexes
+        for (int i = 0; i < NUM; ++i)
+        {
+            Point2f pt = fpoints.at<Point2f>(i);
+            const double dist = cv::norm(pt - center);
+            EXPECT_LE(dist, radius);
+            if (abs(dist - radius) < 0.01)
+                boundPts.push_back(i);
+        }
+        // 2 points on diameter or at least 3 points on circle
+        EXPECT_GE(boundPts.size(), 2llu);
+
+        // 2 points on diameter
+        if (boundPts.size() == 2llu)
+        {
+            const Point2f diff = fpoints.at<Point2f>(boundPts[0]) - fpoints.at<Point2f>(boundPts[1]);
+            EXPECT_NEAR(cv::norm(diff), 2 * radius, 0.001);
+        }
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(/**/,
+    minEnclosingCircle_Modes,
+        testing::Values(CV_32FC2, CV_32SC2));
+
+//==============================================================================
+
+TEST(minEnclosingCircle, three_points)
+{
+    RNG & rng = TS::ptr()->get_rng();
+    Point2f center = Point2f(rng.uniform(0.0f, 1000.0f), rng.uniform(0.0f, 1000.0f));;
+    float radius = rng.uniform(0.0f, 500.0f);
+    float angle = (float)rng.uniform(0.0f, (float)(CV_2PI));
+    vector<Point2f> pts;
+    pts.push_back(center + Point2f(radius * cos(angle), radius * sin(angle)));
+    angle += (float)CV_PI;
+    pts.push_back(center + Point2f(radius * cos(angle), radius * sin(angle)));
+    float radius2 = radius * radius;
+    float x = rng.uniform(center.x - radius, center.x + radius);
+    float deltaX = x - center.x;
+    float upperBoundY = sqrt(radius2 - deltaX * deltaX);
+    float y = rng.uniform(center.y - upperBoundY, center.y + upperBoundY);
+    pts.push_back(Point2f(x, y));
+    // Find the minimum area enclosing circle
+    Point2f calcCenter;
+    float calcRadius;
+    cv::minEnclosingCircle(pts, calcCenter, calcRadius);
+    const float delta = (float)cv::norm(calcCenter - center) + abs(calcRadius - radius);
+    EXPECT_LE(delta, 1.f);
+}
 
 }} // namespace
 /* End of file. */
