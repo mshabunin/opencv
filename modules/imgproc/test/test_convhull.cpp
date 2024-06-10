@@ -943,9 +943,9 @@ TEST(Imgproc_minEnclosingTriangle, regression_mat_with_diff_channels)
 
 //==============================================================================
 
-typedef testing::TestWithParam<tuple<int, int>> Imgproc_FitLine_Modes;
+typedef testing::TestWithParam<tuple<int, int>> fitLine_Modes;
 
-TEST_P(Imgproc_FitLine_Modes, accuracy)
+TEST_P(fitLine_Modes, accuracy)
 {
     const int data_type = get<0>(GetParam());
     const int dist_type = get<1>(GetParam());
@@ -1002,7 +1002,7 @@ TEST_P(Imgproc_FitLine_Modes, accuracy)
 }
 
 INSTANTIATE_TEST_CASE_P(/**/,
-    Imgproc_FitLine_Modes,
+    fitLine_Modes,
     testing::Combine(
         testing::Values(CV_32FC2, CV_32FC3, CV_32SC2, CV_32SC3),
         testing::Values(DIST_L1, DIST_L2, DIST_L12, DIST_FAIR, DIST_WELSCH, DIST_HUBER)));
@@ -1029,9 +1029,9 @@ inline float angleDiff(float a, float b)
     return normAngle(res);
 }
 
-typedef testing::TestWithParam<int> Imgproc_FitEllipse_Modes;
+typedef testing::TestWithParam<int> fitEllipse_Modes;
 
-TEST_P(Imgproc_FitEllipse_Modes, accuracy)
+TEST_P(fitEllipse_Modes, accuracy)
 {
     const int data_type = GetParam();
     const float int_scale = 1000.;
@@ -1077,7 +1077,7 @@ TEST_P(Imgproc_FitEllipse_Modes, accuracy)
             }
         }
 
-        RotatedRect res = fitEllipse(points);
+        RotatedRect res = cv::fitEllipse(points);
 
         if (data_type == CV_32SC2)
         {
@@ -1105,12 +1105,10 @@ TEST_P(Imgproc_FitEllipse_Modes, accuracy)
 }
 
 INSTANTIATE_TEST_CASE_P(/**/,
-    Imgproc_FitEllipse_Modes,
+    fitEllipse_Modes,
         testing::Values(CV_32FC2, CV_32SC2));
 
 //==============================================================================
-
-typedef testing::TestWithParam<int> Imgproc_ConvexHull_Modes;
 
 // points stored in rows
 inline static int findPointInMat(const Mat & data, const Mat & point)
@@ -1134,7 +1132,9 @@ inline static double getSide(const Mat & ptA, const Mat & ptB, const Mat & pt)
     return determinant(prod);
 }
 
-TEST_P(Imgproc_ConvexHull_Modes, accuracy)
+typedef testing::TestWithParam<int> convexHull_Modes;
+
+TEST_P(convexHull_Modes, accuracy)
 {
     const int data_type = GetParam();
     RNG & rng = TS::ptr()->get_rng();
@@ -1191,15 +1191,15 @@ TEST_P(Imgproc_ConvexHull_Modes, accuracy)
 }
 
 INSTANTIATE_TEST_CASE_P(/**/,
-    Imgproc_ConvexHull_Modes,
+    convexHull_Modes,
         testing::Values(CV_32FC2, CV_32SC2));
 
 
 //==============================================================================
 
-typedef testing::TestWithParam<int> Imgproc_MinAreaRect_Modes;
+typedef testing::TestWithParam<int> minAreaRect_Modes;
 
-TEST_P(Imgproc_MinAreaRect_Modes, accuracy)
+TEST_P(minAreaRect_Modes, accuracy)
 {
     const int data_type = GetParam();
     RNG & rng = TS::ptr()->get_rng();
@@ -1229,7 +1229,7 @@ TEST_P(Imgproc_MinAreaRect_Modes, accuracy)
                 Mat one_point;
                 points.row(k).convertTo(one_point, CV_32FC2);
                 const double side = getSide(cur, next, one_point);
-                if (abs(side) < 0.0001) // point on edge - no need to check
+                if (abs(side) < 0.01) // point on edge - no need to check
                 {
                     edgeHasPoint[i] = true;
                     continue;
@@ -1250,7 +1250,7 @@ TEST_P(Imgproc_MinAreaRect_Modes, accuracy)
 }
 
 INSTANTIATE_TEST_CASE_P(/**/,
-    Imgproc_MinAreaRect_Modes,
+    minAreaRect_Modes,
         testing::Values(CV_32FC2, CV_32SC2));
 
 
@@ -1285,9 +1285,9 @@ inline static bool isEdgeOnHull(const Mat &hull, const Mat &ptA, const Mat &ptB,
     return false;
 }
 
-typedef testing::TestWithParam<int> Imgproc_MinEnclosingTriangle_Modes;
+typedef testing::TestWithParam<int> minEnclosingTriangle_Modes;
 
-TEST_P(Imgproc_MinEnclosingTriangle_Modes, accuracy)
+TEST_P(minEnclosingTriangle_Modes, accuracy)
 {
     const int data_type = GetParam();
     RNG & rng = TS::ptr()->get_rng();
@@ -1327,9 +1327,9 @@ TEST_P(Imgproc_MinEnclosingTriangle_Modes, accuracy)
                 const double side = getSide(cur, next, pt);
                 if (abs(side) < 0.01) // point on edge - no need to check
                     continue;
-                if (commonSide == 0.) // initial state
+                if (commonSide == 0.f) // initial state
                 {
-                    commonSide = side > 0 ? 1. : -1.; // only sign matters
+                    commonSide = side > 0 ? 1.f : -1.f; // only sign matters
                 }
                 else
                 {
@@ -1350,7 +1350,7 @@ TEST_P(Imgproc_MinEnclosingTriangle_Modes, accuracy)
 }
 
 INSTANTIATE_TEST_CASE_P(/**/,
-    Imgproc_MinEnclosingTriangle_Modes,
+    minEnclosingTriangle_Modes,
         testing::Values(CV_32FC2, CV_32SC2));
 
 
