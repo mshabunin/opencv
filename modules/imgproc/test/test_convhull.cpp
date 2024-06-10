@@ -39,14 +39,9 @@
 //
 //M*/
 
-#include "opencv2/core/base.hpp"
-#include "opencv2/core/types.hpp"
-#include "opencv2/imgproc.hpp"
 #include "opencv2/ts.hpp"
 #include "opencv2/ts/cuda_test.hpp"
 #include "test_precomp.hpp"
-#include <cfloat>
-#include <cmath>
 
 namespace opencv_test { namespace {
 
@@ -54,7 +49,7 @@ namespace opencv_test { namespace {
 *                                 minEnclosingCircle Test 3                              *
 \****************************************************************************************/
 
-TEST(Imgproc_minEnclosingCircle, basic_test)
+TEST(minEnclosingCircle, basic_test)
 {
     vector<Point2f> pts;
     pts.push_back(Point2f(0, 0));
@@ -130,42 +125,6 @@ TEST(Imgproc_minEnclosingCircle, regression_16051) {
     EXPECT_NEAR(center.y, 1414.1f, 1e-3);
     EXPECT_NEAR(2.1024551f, radius, 1e-3);
 }
-
-
-
-class CV_FitEllipseSmallTest : public cvtest::BaseTest
-{
-public:
-    CV_FitEllipseSmallTest() {}
-    ~CV_FitEllipseSmallTest() {}
-protected:
-    void run(int)
-    {
-        Size sz(50, 50);
-        vector<vector<Point> > c;
-        c.push_back(vector<Point>());
-        int scale = 1;
-        Point ofs = Point(0,0);//sz.width/2, sz.height/2) - Point(4,4)*scale;
-        c[0].push_back(Point(2, 0)*scale+ofs);
-        c[0].push_back(Point(0, 2)*scale+ofs);
-        c[0].push_back(Point(0, 6)*scale+ofs);
-        c[0].push_back(Point(2, 8)*scale+ofs);
-        c[0].push_back(Point(6, 8)*scale+ofs);
-        c[0].push_back(Point(8, 6)*scale+ofs);
-        c[0].push_back(Point(8, 2)*scale+ofs);
-        c[0].push_back(Point(6, 0)*scale+ofs);
-
-        RotatedRect e = fitEllipse(c[0]);
-        CV_Assert( fabs(e.center.x - 4) <= 1. &&
-                   fabs(e.center.y - 4) <= 1. &&
-                   fabs(e.size.width - 9) <= 1. &&
-                   fabs(e.size.height - 9) <= 1. );
-    }
-};
-
-
-TEST(Imgproc_FitEllipse, small) { CV_FitEllipseSmallTest test; test.safe_run(); }
-
 
 PARAM_TEST_CASE(ConvexityDefects_regression_5908, bool, int)
 {
@@ -661,10 +620,12 @@ INSTANTIATE_TEST_CASE_P(/**/,
 
 inline float normAngle(float angle_deg)
 {
-    while (angle_deg < 0)
-        angle_deg += 180;
-    while (angle_deg > 180 - 0.01)
-        angle_deg -= 180;
+    while (angle_deg < 0.f)
+        angle_deg += 180.f;
+    while (angle_deg > 180.f)
+        angle_deg -= 180.f;
+    if (abs(angle_deg - 180.f) < 0.01) // border case
+        angle_deg = 0.f;
     return angle_deg;
 }
 
@@ -684,7 +645,7 @@ typedef testing::TestWithParam<int> fitEllipse_Modes;
 TEST_P(fitEllipse_Modes, accuracy)
 {
     const int data_type = GetParam();
-    const float int_scale = 1000.;
+    const float int_scale = 1000.f;
     const Size sz(1, 2);
     const Matx22f rot {0.f, -1.f, 1.f, 0.f};
     RNG& rng = TS::ptr()->get_rng();
@@ -694,8 +655,8 @@ TEST_P(fitEllipse_Modes, accuracy)
         SCOPED_TRACE(cv::format("iteration %d", ITER));
 
         Mat f0(sz, CV_32FC1), f1(sz, CV_32FC1), f2(sz, CV_32FC1);
-        cvtest::randUni(rng, f0, Scalar::all(-10), Scalar::all(10));
-        cvtest::randUni(rng, f1, Scalar::all(-10), Scalar::all(10));
+        cvtest::randUni(rng, f0, Scalar::all(-100), Scalar::all(100));
+        cvtest::randUni(rng, f1, Scalar::all(-100), Scalar::all(100));
         if (ITER % 4 == 0)
         {
             // 0/90 degrees case
@@ -732,13 +693,14 @@ TEST_P(fitEllipse_Modes, accuracy)
         if (data_type == CV_32SC2)
         {
             res.center /= int_scale;
-            res.size = Size(res.size.width / int_scale, res.size.height / int_scale);
+            res.size = Size2f(res.size.width / int_scale, res.size.height / int_scale);
         }
         const bool sizeSwap = (res.size.width < res.size.height) != (ref_size.width < ref_size.height);
         if (sizeSwap)
         {
-            swap(res.size.width, res.size.height);
+            std::swap(res.size.width, res.size.height);
         }
+        EXPECT_FALSE(res.size.empty());
         EXPECT_POINT2_NEAR(res.center, ref_center, 0.01);
         const float sizeDiff = (data_type == CV_32FC2) ? 0.1 : 1;
         EXPECT_NEAR(min(res.size.width, res.size.height), min(ref_size.width, ref_size.height), sizeDiff);
@@ -757,6 +719,32 @@ TEST_P(fitEllipse_Modes, accuracy)
 INSTANTIATE_TEST_CASE_P(/**/,
     fitEllipse_Modes,
         testing::Values(CV_32FC2, CV_32SC2));
+
+//==============================================================================
+
+TEST(fitEllipse, small)
+{
+    Size sz(50, 50);
+    vector<vector<Point> > c;
+    c.push_back(vector<Point>());
+    int scale = 1;
+    Point ofs = Point(0,0);//sz.width/2, sz.height/2) - Point(4,4)*scale;
+    c[0].push_back(Point(2, 0)*scale+ofs);
+    c[0].push_back(Point(0, 2)*scale+ofs);
+    c[0].push_back(Point(0, 6)*scale+ofs);
+    c[0].push_back(Point(2, 8)*scale+ofs);
+    c[0].push_back(Point(6, 8)*scale+ofs);
+    c[0].push_back(Point(8, 6)*scale+ofs);
+    c[0].push_back(Point(8, 2)*scale+ofs);
+    c[0].push_back(Point(6, 0)*scale+ofs);
+
+    RotatedRect e = cv::fitEllipse(c[0]);
+
+    EXPECT_NEAR(e.center.x, 4, 1.f);
+    EXPECT_NEAR(e.center.y, 4, 1.f);
+    EXPECT_NEAR(e.size.width, 9, 1.);
+    EXPECT_NEAR(e.size.height, 9, 1.f);
+}
 
 //==============================================================================
 
