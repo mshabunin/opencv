@@ -59,104 +59,6 @@ cvTsDist( const Point2f& a, const Point2f& b )
     return sqrt(dx*dx + dy*dy);
 }
 
-CV_INLINE double
-cvTsPtLineDist( const Point2f& pt, const Point2f& a, const Point2f& b )
-{
-    double d0 = cvTsDist( pt, a ), d1;
-    double dd = cvTsDist( a, b );
-    if( dd < FLT_EPSILON )
-        return d0;
-    d1 = cvTsDist( pt, b );
-    dd = fabs((double)(pt.x - a.x)*(b.y - a.y) - (double)(pt.y - a.y)*(b.x - a.x))/dd;
-    d0 = MIN( d0, d1 );
-    return MIN( d0, dd );
-}
-
-static double
-cvTsPointPolygonTest( Point2f pt, const Point2f* vv, int n, int* _idx=0, int* _on_edge=0 )
-{
-    int i;
-    Point2f v = vv[n-1], v0;
-    double min_dist_num = FLT_MAX, min_dist_denom = 1;
-    int min_dist_idx = -1, min_on_edge = 0;
-    int counter = 0;
-    double result;
-
-    for( i = 0; i < n; i++ )
-    {
-        double dx, dy, dx1, dy1, dx2, dy2, dist_num, dist_denom = 1;
-        int on_edge = 0, idx = i;
-
-        v0 = v; v = vv[i];
-        dx = v.x - v0.x; dy = v.y - v0.y;
-        dx1 = pt.x - v0.x; dy1 = pt.y - v0.y;
-        dx2 = pt.x - v.x; dy2 = pt.y - v.y;
-
-        if( dx2*dx + dy2*dy >= 0 )
-            dist_num = dx2*dx2 + dy2*dy2;
-        else if( dx1*dx + dy1*dy <= 0 )
-        {
-            dist_num = dx1*dx1 + dy1*dy1;
-            idx = i - 1;
-            if( idx < 0 ) idx = n-1;
-        }
-        else
-        {
-            dist_num = (dy1*dx - dx1*dy);
-            dist_num *= dist_num;
-            dist_denom = dx*dx + dy*dy;
-            on_edge = 1;
-        }
-
-        if( dist_num*min_dist_denom < min_dist_num*dist_denom )
-        {
-            min_dist_num = dist_num;
-            min_dist_denom = dist_denom;
-            min_dist_idx = idx;
-            min_on_edge = on_edge;
-            if( min_dist_num == 0 )
-                break;
-        }
-
-        if( (v0.y <= pt.y && v.y <= pt.y) ||
-            (v0.y > pt.y && v.y > pt.y) ||
-            (v0.x < pt.x && v.x < pt.x) )
-            continue;
-
-        dist_num = dy1*dx - dx1*dy;
-        if( dy < 0 )
-            dist_num = -dist_num;
-        counter += dist_num > 0;
-    }
-
-    result = sqrt(min_dist_num/min_dist_denom);
-    if( counter % 2 == 0 )
-        result = -result;
-
-    if( _idx )
-        *_idx = min_dist_idx;
-    if( _on_edge )
-        *_on_edge = min_on_edge;
-
-    return result;
-}
-
-static cv::Point2f
-cvTsMiddlePoint(const cv::Point2f &a, const cv::Point2f &b)
-{
-    return cv::Point2f((a.x + b.x) / 2, (a.y + b.y) / 2);
-}
-
-static bool
-cvTsIsPointOnLineSegment(const cv::Point2f &x, const cv::Point2f &a, const cv::Point2f &b)
-{
-    double d1 = cvTsDist(x, a);
-    double d2 = cvTsDist(x, b);
-    double d3 = cvTsDist(a, b);
-
-    return (abs(d1 + d2 - d3) <= (1E-4));
-}
-
 
 /****************************************************************************************\
 *                              Base class for shape descriptor tests                     *
@@ -370,127 +272,6 @@ int CV_BaseShapeDescrTest::validate_test_results( int /*test_case_idx*/ )
     extract_points();
     return 0;
 }
-
-
-/****************************************************************************************\
-*                                   MinEnclosingTriangle Test                            *
-\****************************************************************************************/
-
-class CV_MinTriangleTest : public CV_BaseShapeDescrTest
-{
-public:
-    CV_MinTriangleTest();
-
-protected:
-    void run_func(void);
-    int validate_test_results( int test_case_idx );
-    std::vector<cv::Point2f> getTriangleMiddlePoints();
-
-    std::vector<cv::Point2f> convexPolygon;
-    std::vector<cv::Point2f> triangle;
-};
-
-
-CV_MinTriangleTest::CV_MinTriangleTest()
-{
-}
-
-std::vector<cv::Point2f> CV_MinTriangleTest::getTriangleMiddlePoints()
-{
-    std::vector<cv::Point2f> triangleMiddlePoints;
-
-    for (int i = 0; i < 3; i++) {
-        triangleMiddlePoints.push_back(cvTsMiddlePoint(triangle[i], triangle[(i + 1) % 3]));
-    }
-
-    return triangleMiddlePoints;
-}
-
-
-void CV_MinTriangleTest::run_func()
-{
-    std::vector<cv::Point2f> pointsAsVector;
-
-    cv::cvarrToMat(points).convertTo(pointsAsVector, CV_32F);
-
-    cv::minEnclosingTriangle(pointsAsVector, triangle);
-    cv::convexHull(pointsAsVector, convexPolygon, true, true);
-}
-
-
-int CV_MinTriangleTest::validate_test_results( int test_case_idx )
-{
-    bool errorEnclosed = false, errorMiddlePoints = false, errorFlush = true;
-    double eps = 1e-4;
-    int code = CV_BaseShapeDescrTest::validate_test_results( test_case_idx );
-
-    int polygonVertices = (int) convexPolygon.size();
-
-    if (polygonVertices > 2) {
-        // Check if all points are enclosed by the triangle
-        for (int i = 0; (i < polygonVertices) && (!errorEnclosed); i++)
-        {
-            if (cv::pointPolygonTest(triangle, cv::Point2f(convexPolygon[i].x, convexPolygon[i].y), true) < (-eps))
-                errorEnclosed = true;
-        }
-
-        // Check if triangle edges middle points touch the polygon
-        std::vector<cv::Point2f> middlePoints = getTriangleMiddlePoints();
-
-        for (int i = 0; (i < 3) && (!errorMiddlePoints); i++)
-        {
-            bool isTouching = false;
-
-            for (int j = 0; (j < polygonVertices) && (!isTouching); j++)
-            {
-                if (cvTsIsPointOnLineSegment(middlePoints[i], convexPolygon[j],
-                                             convexPolygon[(j + 1) % polygonVertices]))
-                    isTouching = true;
-            }
-
-            errorMiddlePoints = (isTouching) ? false : true;
-        }
-
-        // Check if at least one of the edges is flush
-        for (int i = 0; (i < 3) && (errorFlush); i++)
-        {
-            for (int j = 0; (j < polygonVertices) && (errorFlush); j++)
-            {
-                if ((cvTsIsPointOnLineSegment(convexPolygon[j], triangle[i],
-                                              triangle[(i + 1) % 3])) &&
-                    (cvTsIsPointOnLineSegment(convexPolygon[(j + 1) % polygonVertices], triangle[i],
-                                              triangle[(i + 1) % 3])))
-                    errorFlush = false;
-            }
-        }
-
-        // Report any found errors
-        if (errorEnclosed)
-        {
-            ts->printf( cvtest::TS::LOG,
-            "All points should be enclosed by the triangle.\n" );
-            code = cvtest::TS::FAIL_BAD_ACCURACY;
-        }
-        else if (errorMiddlePoints)
-        {
-            ts->printf( cvtest::TS::LOG,
-            "All triangle edges middle points should touch the convex hull of the points.\n" );
-            code = cvtest::TS::FAIL_INVALID_OUTPUT;
-        }
-        else if (errorFlush)
-        {
-            ts->printf( cvtest::TS::LOG,
-            "At least one edge of the enclosing triangle should be flush with one edge of the polygon.\n" );
-            code = cvtest::TS::FAIL_INVALID_OUTPUT;
-        }
-    }
-
-    if ( code < 0 )
-        ts->set_failed_test_info( code );
-
-    return code;
-}
-
 
 /****************************************************************************************\
 *                                     MinEnclosingCircle Test                            *
@@ -731,7 +512,6 @@ protected:
 };
 
 
-TEST(Imgproc_MinTriangle, accuracy) { CV_MinTriangleTest test; test.safe_run(); }
 TEST(Imgproc_MinCircle, accuracy) { CV_MinCircleTest test; test.safe_run(); }
 TEST(Imgproc_MinCircle2, accuracy) { CV_MinCircleTest2 test; test.safe_run(); }
 TEST(Imgproc_FitEllipse, small) { CV_FitEllipseSmallTest test; test.safe_run(); }
@@ -1472,6 +1252,107 @@ TEST_P(Imgproc_MinAreaRect_Modes, accuracy)
 INSTANTIATE_TEST_CASE_P(/**/,
     Imgproc_MinAreaRect_Modes,
         testing::Values(CV_32FC2, CV_32SC2));
+
+
+//==============================================================================
+
+// true if "point" is on one of hull's edges
+inline static bool isPointOnHull(const Mat &hull, const Mat &point, const double thresh = 0.01)
+{
+    const int sz = hull.rows;
+    for (int k = 0; k < sz; ++k)
+    {
+        const double side = getSide(hull.row(k), hull.row(k == sz - 1 ? 0 : k + 1), point);
+        if (abs(side) < thresh)
+            return true;
+    }
+    return false;
+}
+
+// true if one of hull's edges touches "A-B"
+inline static bool isEdgeOnHull(const Mat &hull, const Mat &ptA, const Mat &ptB, const double thresh = 0.01)
+{
+    const int sz = hull.rows;
+    double prev_side = getSide(ptA, ptB, hull.row(sz - 1));
+    for (int k = 0; k < sz; ++k)
+    {
+        Mat cur = hull.row(k);
+        const double cur_side = getSide(ptA, ptB, cur);
+        if (abs(prev_side) < thresh && abs(cur_side) < thresh)
+            return true;
+        prev_side = cur_side;
+    }
+    return false;
+}
+
+typedef testing::TestWithParam<int> Imgproc_MinEnclosingTriangle_Modes;
+
+TEST_P(Imgproc_MinEnclosingTriangle_Modes, accuracy)
+{
+    const int data_type = GetParam();
+    RNG & rng = TS::ptr()->get_rng();
+    for (int ITER = 0; ITER < 20; ++ITER)
+    {
+        SCOPED_TRACE(cv::format("iteration %d", ITER));
+
+        const int NUM = cvtest::randomInt(5, 100);
+        Mat points(NUM, 1, data_type, Scalar::all(0));
+        cvtest::randUni(rng, points, Scalar::all(-100), Scalar::all(100));
+
+        Mat triangle;
+        const double area = cv::minEnclosingTriangle(points, triangle);
+
+        ASSERT_GT(area, 0.0001);
+        ASSERT_EQ(triangle.size(), Size(3, 1));
+        ASSERT_EQ(triangle.type(), CV_32FC2);
+
+        Mat hull;
+        cv::convexHull(points, hull);
+        hull.convertTo(hull, CV_32FC2);
+
+        // check that all points are enclosed by triangle sides
+        double commonSide = 0.;
+        bool hasEdgeOnHull = false;
+        for (int i = 0; i < 3; ++i)
+        {
+            SCOPED_TRACE(cv::format("edge %d", i));
+            const int j = (i == 2) ? 0 : i + 1;
+            Mat cur = triangle.col(i);
+            Mat next = triangle.col(j);
+            for (int k = 0; k < points.rows; ++k)
+            {
+                SCOPED_TRACE(cv::format("point %d", k));
+                Mat pt;
+                points.row(k).convertTo(pt, CV_32FC2);
+                const double side = getSide(cur, next, pt);
+                if (abs(side) < 0.01) // point on edge - no need to check
+                    continue;
+                if (commonSide == 0.) // initial state
+                {
+                    commonSide = side > 0 ? 1. : -1.; // only sign matters
+                }
+                else
+                {
+                    // either on the same side or close to zero
+                    EXPECT_EQ(commonSide > 0, side > 0) << commonSide << ", side=" << side;
+                }
+            }
+
+            // triangle mid-points must be on the hull edges
+            const Mat midPoint = (cur + next) / 2;
+            EXPECT_TRUE(isPointOnHull(hull, midPoint));
+
+            // at least one of hull edges must be on tirangle edge
+            hasEdgeOnHull = hasEdgeOnHull || isEdgeOnHull(hull, cur, next);
+        }
+        EXPECT_TRUE(hasEdgeOnHull);
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(/**/,
+    Imgproc_MinEnclosingTriangle_Modes,
+        testing::Values(CV_32FC2, CV_32SC2));
+
 
 }} // namespace
 /* End of file. */
