@@ -163,20 +163,36 @@ TEST_P(Canny_Modes, accuracy)
     const int aperture = get<0>(GetParam());
     const bool trueGradient = get<1>(GetParam());
     const double range = aperture == 3 ? 300. : 1000.;
-
     RNG & rng = TS::ptr()->get_rng();
-    const double thresh1 = rng.uniform(0., range);
-    const double thresh2 = rng.uniform(0., range * 0.3);
-    const Size sz(rng.uniform(127, 800), rng.uniform(127, 600));
 
-    const std::string fname = cvtest::findDataFile("shared/fruits.png");
-    const Mat original = cv::imread(fname, IMREAD_GRAYSCALE);
-
-    Mat img;
-    resize(original, img, sz, 0, 0, INTER_LINEAR_EXACT);
-    GaussianBlur(img, img, Size(5, 5), 0);
-
+    for (int ITER = 0; ITER < 20; ++ITER)
     {
+        SCOPED_TRACE(cv::format("iteration %d", ITER));
+
+        const std::string fname = cvtest::findDataFile("shared/fruits.png");
+        const Mat original = cv::imread(fname, IMREAD_GRAYSCALE);
+
+        const double thresh1 = rng.uniform(0., range);
+        const double thresh2 = rng.uniform(0., range * 0.3);
+        const Size sz(rng.uniform(127, 800), rng.uniform(127, 600));
+        const Size osz = original.size();
+
+        // preparation
+        Mat img;
+        if (sz.width >= osz.width || sz.height >= osz.height)
+        {
+            // larger image -> scale
+            resize(original, img, sz, 0, 0, INTER_LINEAR_EXACT);
+        }
+        else
+        {
+            // smaller image -> crop
+            Point origin(rng.uniform(0, osz.width - sz.width), rng.uniform(0, osz.height - sz.height));
+            Rect roi(origin, sz);
+            original(roi).copyTo(img);
+        }
+        GaussianBlur(img, img, Size(5, 5), 0);
+
         // regular function
         Mat result;
         {
