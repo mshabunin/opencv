@@ -39,6 +39,8 @@
 //
 //M*/
 
+#include "opencv2/ts/ocl_test.hpp"
+#include "opencv2/ts/ts_gtest.h"
 #include "test_precomp.hpp"
 #include "opencv2/core/core_c.h"
 
@@ -1198,6 +1200,24 @@ TEST(Imgproc_Remap, issue_23562)
         ASSERT_EQ(0.0, cvtest::norm(ref, dst, NORM_INF)) << "channels=" << cn;
     }
 }
+
+//==============================================================================
+
+// depth, channels
+typedef testing::TestWithParam<testing::tuple<ocl::MatDepth, int>> Remap_Modes;
+
+
+TEST_P(Remap_Modes, accuracy)
+{
+    const int data_type = CV_MAKE_TYPE(get<0>(GetParam()), get<1>(GetParam()));
+
+    RNG & rng = TS::ptr()->get_rng();
+}
+
+INSTANTIATE_TEST_CASE_P(/**/, Remap_Modes,
+    testing::Combine(
+        testing::Values(CV_8U, CV_16U, CV_32F),
+        testing::Values(1, 2, 3)));
 
 }} // namespace
 /* End of file. */
