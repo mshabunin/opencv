@@ -39,6 +39,7 @@
 //
 //M*/
 
+#include "opencv2/core/hal/interface.h"
 #include "opencv2/ts.hpp"
 #include "opencv2/ts/cuda_test.hpp"
 #include "test_precomp.hpp"
@@ -770,11 +771,11 @@ inline static double getSide(const Mat & ptA, const Mat & ptB, const Mat & pt)
     return determinant(prod);
 }
 
-typedef testing::TestWithParam<int> convexHull_Modes;
+typedef testing::TestWithParam<perf::MatDepth> convexHull_Modes;
 
 TEST_P(convexHull_Modes, accuracy)
 {
-    const int data_type = GetParam();
+    const int data_type = CV_MAKE_TYPE(GetParam(), 2);
     RNG & rng = TS::ptr()->get_rng();
 
     for (int ITER = 0; ITER < 20; ++ITER)
@@ -830,16 +831,16 @@ TEST_P(convexHull_Modes, accuracy)
 
 INSTANTIATE_TEST_CASE_P(/**/,
     convexHull_Modes,
-        testing::Values(CV_32FC2, CV_32SC2));
+        testing::Values(CV_32F, CV_32S));
 
 
 //==============================================================================
 
-typedef testing::TestWithParam<int> minAreaRect_Modes;
+typedef testing::TestWithParam<perf::MatDepth> minAreaRect_Modes;
 
 TEST_P(minAreaRect_Modes, accuracy)
 {
-    const int data_type = GetParam();
+    const int data_type = CV_MAKE_TYPE(GetParam(), 2);
     RNG & rng = TS::ptr()->get_rng();
     for (int ITER = 0; ITER < 20; ++ITER)
     {
@@ -889,7 +890,7 @@ TEST_P(minAreaRect_Modes, accuracy)
 
 INSTANTIATE_TEST_CASE_P(/**/,
     minAreaRect_Modes,
-        testing::Values(CV_32FC2, CV_32SC2));
+        testing::Values(CV_32F, CV_32S));
 
 
 //==============================================================================
@@ -923,11 +924,11 @@ inline static bool isEdgeOnHull(const Mat &hull, const Mat &ptA, const Mat &ptB,
     return false;
 }
 
-typedef testing::TestWithParam<int> minEnclosingTriangle_Modes;
+typedef testing::TestWithParam<perf::MatDepth> minEnclosingTriangle_Modes;
 
 TEST_P(minEnclosingTriangle_Modes, accuracy)
 {
-    const int data_type = GetParam();
+    const int data_type = CV_MAKETYPE(GetParam(), 2);
     RNG & rng = TS::ptr()->get_rng();
     for (int ITER = 0; ITER < 20; ++ITER)
     {
@@ -989,15 +990,15 @@ TEST_P(minEnclosingTriangle_Modes, accuracy)
 
 INSTANTIATE_TEST_CASE_P(/**/,
     minEnclosingTriangle_Modes,
-        testing::Values(CV_32FC2, CV_32SC2));
+        testing::Values(CV_32F, CV_32S));
 
 //==============================================================================
 
-typedef testing::TestWithParam<int> minEnclosingCircle_Modes;
+typedef testing::TestWithParam<perf::MatDepth> minEnclosingCircle_Modes;
 
 TEST_P(minEnclosingCircle_Modes, accuracy)
 {
-    const int data_type = GetParam();
+    const int data_type = CV_MAKETYPE(GetParam(), 2);
     RNG & rng = TS::ptr()->get_rng();
     for (int ITER = 0; ITER < 20; ++ITER)
     {
@@ -1035,7 +1036,7 @@ TEST_P(minEnclosingCircle_Modes, accuracy)
 
 INSTANTIATE_TEST_CASE_P(/**/,
     minEnclosingCircle_Modes,
-        testing::Values(CV_32FC2, CV_32SC2));
+        testing::Values(CV_32F, CV_32S));
 
 //==============================================================================
 
