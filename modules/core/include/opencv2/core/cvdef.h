@@ -928,6 +928,9 @@ typedef hfloat float16_t;
 }
 #endif
 
+//! Macro to construct the fourcc code of the codec. Same as CV_FOURCC()
+#define CV_FOURCC_MACRO(c1, c2, c3, c4) (((c1) & 255) + (((c2) & 255) << 8) + (((c3) & 255) << 16) + (((c4) & 255) << 24))
+
 //! @}
 
 #ifndef __cplusplus

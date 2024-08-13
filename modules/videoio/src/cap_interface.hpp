@@ -32,6 +32,7 @@ struct CvVideoWriter
     virtual double getProperty(int) const { return 0; }
 };
 
+
 //===================================================
 
 // Modern classes
@@ -240,6 +241,87 @@ public:
     IVideoCapture* getIVideoCapture(const VideoCapture& cap) { return cap.icap.get(); }
 };
 } // namespace
+
+
+// Advanced base class for VideoCapture backends providing some extra functionality
+class VideoCaptureBase : public IVideoCapture
+{
+public:
+    VideoCaptureBase() : autorotate(false) {}
+    double getProperty(int propId) const CV_OVERRIDE
+    {
+        switch(propId)
+        {
+            case cv::CAP_PROP_ORIENTATION_AUTO:
+                return static_cast<double>(autorotate);
+
+            case cv::CAP_PROP_FRAME_WIDTH:
+                return shouldSwapWidthHeight() ? getProperty_(cv::CAP_PROP_FRAME_HEIGHT) : getProperty_(cv::CAP_PROP_FRAME_WIDTH);
+
+            case cv::CAP_PROP_FRAME_HEIGHT:
+                return shouldSwapWidthHeight() ? getProperty_(cv::CAP_PROP_FRAME_WIDTH) : getProperty_(cv::CAP_PROP_FRAME_HEIGHT);
+
+            default:
+                return getProperty_(propId);
+        }
+    }
+    bool setProperty(int propId, double value) CV_OVERRIDE
+    {
+        switch(propId)
+        {
+            case cv::CAP_PROP_ORIENTATION_AUTO:
+                autorotate = (value != 0);
+                return true;
+
+            default:
+                return setProperty_(propId, value);
+        }
+    }
+    bool retrieveFrame(int channel, OutputArray image) CV_OVERRIDE
+    {
+        const bool res = retrieveFrame_(channel, image);
+        if (res)
+            applyMetadataRotation(image);
+        return res;
+    }
+
+protected:
+    virtual double getProperty_(int) const = 0;
+    virtual bool setProperty_(int, double) = 0;
+    virtual bool retrieveFrame_(int, OutputArray) = 0;
+
+protected:
+    bool shouldSwapWidthHeight() const
+    {
+        if (!autorotate)
+            return false;
+        int rotation = static_cast<int>(getProperty(cv::CAP_PROP_ORIENTATION_META));
+        return std::abs(rotation % 180) == 90;
+    }
+    void applyMetadataRotation(OutputArray mat) const
+    {
+        bool rotation_auto = 0 != getProperty(CAP_PROP_ORIENTATION_AUTO);
+        int rotation_angle = static_cast<int>(getProperty(CAP_PROP_ORIENTATION_META));
+        if(!rotation_auto || rotation_angle%360 == 0)
+        {
+            return;
+        }
+        cv::RotateFlags flag;
+        if(rotation_angle == 90 || rotation_angle == -270) { // Rotate clockwise 90 degrees
+            flag = cv::ROTATE_90_CLOCKWISE;
+        } else if(rotation_angle == 270 || rotation_angle == -90) { // Rotate clockwise 270 degrees
+            flag = cv::ROTATE_90_COUNTERCLOCKWISE;
+        } else if(rotation_angle == 180 || rotation_angle == -180) { // Rotate clockwise 180 degrees
+            flag = cv::ROTATE_180;
+        } else { // Unsupported rotation
+            return;
+        }
+        cv::rotate(mat, mat, flag);
+    }
+
+protected:
+    bool autorotate;
+};
 
 //===================================================
 

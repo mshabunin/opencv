@@ -605,7 +605,7 @@ public:
 
     int get_flags() const { return flags_; }
 
-    void set_image(cv::Mat const &image);
+    void set_image(cv::InputArray arr);
 
     void set_mouse_callback(CvMouseCallback callback, void *param);
 
@@ -740,7 +740,7 @@ public:
 
     cv_wl_window_state const &state() const;
 
-    void show_image(cv::Mat const &image);
+    void show_image(cv::InputArray arr);
 
     int create_trackbar(std::string const &name, int *value, int count, CvTrackbarCallback2 on_change, void *userdata);
 
@@ -1582,8 +1582,8 @@ cv_wl_viewer::cv_wl_viewer(cv_wl_window *window, int flags)
         : cv_wl_widget(window), flags_(flags) {
 }
 
-void cv_wl_viewer::set_image(cv::Mat const &image) {
-    image_ = image.clone();
+void cv_wl_viewer::set_image(cv::InputArray arr) {
+    image_ = arr.getMat().clone();
     image_changed_ = true;
 
     // See https://github.com/opencv/opencv/issues/25560
@@ -1922,8 +1922,8 @@ void cv_wl_window::set_maximized(bool maximize) {
         xdg_toplevel_set_maximized(xdg_toplevel_);
 }
 
-void cv_wl_window::show_image(cv::Mat const &image) {
-    viewer_->set_image(image);
+void cv_wl_window::show_image(cv::InputArray arr) {
+    viewer_->set_image(arr);
     this->show();
 }
 
@@ -2459,73 +2459,48 @@ protected:
 
 std::shared_ptr<cv_wl_core> CvWlCore::sInstance = nullptr;
 
-CV_IMPL int cvStartWindowThread() {
-    return 0;
-}
-
-CV_IMPL int cvNamedWindow(const char *name, int flags) {
+int namedWindowImpl(const char *name, int flags) {
     return CvWlCore::getInstance().create_window(name, flags);
 }
 
-CV_IMPL void cvDestroyWindow(const char *name) {
+void destroyWindowImpl(const char *name) {
     CvWlCore::getInstance().destroy_window(name);
 }
 
-CV_IMPL void cvDestroyAllWindows() {
+void destroyAllWindowsImpl() {
     CvWlCore::getInstance().destroy_all_windows();
 }
 
-CV_IMPL void *cvGetWindowHandle(const char *name) {
-    return CvWlCore::getInstance().get_window_handle(name);
-}
-
-CV_IMPL const char *cvGetWindowName(void *window_handle) {
-    return CvWlCore::getInstance().get_window_name(window_handle).c_str();
-}
-
-CV_IMPL void cvMoveWindow(const char *name, int x, int y) {
+void moveWindowImpl(const char *name, int x, int y) {
     CV_UNUSED(name);
     CV_UNUSED(x);
     CV_UNUSED(y);
     CV_LOG_ONCE_WARNING(nullptr, "Function not implemented: User cannot move window surfaces in Wayland");
 }
 
-CV_IMPL void cvResizeWindow(const char *name, int width, int height) {
+void resizeWindowImpl(const char *name, int width, int height) {
     if (auto window = CvWlCore::getInstance().get_window(name))
         window->show(cv::Size(width, height));
     else
         throw_system_error("Could not get window name", errno)
 }
 
-CvRect cvGetWindowRect_WAYLAND(const char* name)
+cv::Rect cvGetWindowRect_WAYLAND(const char* name)
 {
     CV_UNUSED(name);
     CV_LOG_ONCE_WARNING(nullptr, "Function not implemented: User cannot get window rect in Wayland");
-    return cvRect(-1, -1, -1, -1);
+    return cv::Rect(-1, -1, -1, -1);
 }
 
-CV_IMPL int cvCreateTrackbar(const char *name_bar, const char *window_name, int *value, int count,
-                             CvTrackbarCallback on_change) {
-    CV_UNUSED(name_bar);
-    CV_UNUSED(window_name);
-    CV_UNUSED(value);
-    CV_UNUSED(count);
-    CV_UNUSED(on_change);
-    CV_LOG_ONCE_WARNING(nullptr, "Not implemented, use cvCreateTrackbar2");
+int createTrackbar2Impl(const char *trackbar_name, const char *window_name, int *val, int count,
+                                CvTrackbarCallback2 on_notify, void *userdata) {
+    if (auto window = CvWlCore::getInstance().get_window(window_name))
+        window->create_trackbar(trackbar_name, val, count, on_notify, userdata);
 
     return 0;
 }
 
-CV_IMPL int cvCreateTrackbar2(const char *trackbar_name, const char *window_name, int *val, int count,
-                              CvTrackbarCallback2 on_notify, void *userdata) {
-    int ret = 0;
-    if (auto window = CvWlCore::getInstance().get_window(window_name))
-        ret = window->create_trackbar(trackbar_name, val, count, on_notify, userdata);
-
-    return ret;
-}
-
-CV_IMPL int cvGetTrackbarPos(const char *trackbar_name, const char *window_name) {
+int getTrackbarPosImpl(const char *trackbar_name, const char *window_name) {
     if (auto window = CvWlCore::getInstance().get_window(window_name)) {
         auto trackbar_ptr = window->get_trackbar(trackbar_name);
         if (auto trackbar = trackbar_ptr.lock())
@@ -2535,7 +2510,7 @@ CV_IMPL int cvGetTrackbarPos(const char *trackbar_name, const char *window_name)
     return -1;
 }
 
-CV_IMPL void cvSetTrackbarPos(const char *trackbar_name, const char *window_name, int pos) {
+void setTrackbarPosImpl(const char *trackbar_name, const char *window_name, int pos) {
     if (auto window = CvWlCore::getInstance().get_window(window_name)) {
         auto trackbar_ptr = window->get_trackbar(trackbar_name);
         if (auto trackbar = trackbar_ptr.lock())
@@ -2543,7 +2518,7 @@ CV_IMPL void cvSetTrackbarPos(const char *trackbar_name, const char *window_name
     }
 }
 
-CV_IMPL void cvSetTrackbarMax(const char *trackbar_name, const char *window_name, int maxval) {
+void setTrackbarMaxImpl(const char *trackbar_name, const char *window_name, int maxval) {
     if (auto window = CvWlCore::getInstance().get_window(window_name)) {
         auto trackbar_ptr = window->get_trackbar(trackbar_name);
         if (auto trackbar = trackbar_ptr.lock())
@@ -2551,18 +2526,18 @@ CV_IMPL void cvSetTrackbarMax(const char *trackbar_name, const char *window_name
     }
 }
 
-CV_IMPL void cvSetTrackbarMin(const char *trackbar_name, const char *window_name, int minval) {
+void setTrackbarMinImpl(const char *trackbar_name, const char *window_name, int minval) {
     CV_UNUSED(trackbar_name);
     CV_UNUSED(window_name);
     CV_UNUSED(minval);
 }
 
-CV_IMPL void cvSetMouseCallback(const char *window_name, CvMouseCallback on_mouse, void *param) {
+void setMouseCallbackImpl(const char *window_name, CvMouseCallback on_mouse, void *param) {
     if (auto window = CvWlCore::getInstance().get_window(window_name))
         window->set_mouse_callback(on_mouse, param);
 }
 
-CV_IMPL void cvShowImage(const char *name, const CvArr *arr) {
+void showImageImpl(const char *name, cv::InputArray arr) {
     // see https://github.com/opencv/opencv/issues/25497
     /*
      * To reuse the result of getInstance() repeatedly looks like better efficient implementation.
@@ -2577,8 +2552,7 @@ CV_IMPL void cvShowImage(const char *name, const CvArr *arr) {
             CV_Error_(StsNoMem, ("Failed to create window: %s", name));
     }
 
-    cv::Mat mat = cv::cvarrToMat(arr, true);
-    window->show_image(mat);
+    window->show_image(arr);
 }
 
 void setWindowTitle_WAYLAND(const cv::String &winname, const cv::String &title) {
@@ -2586,7 +2560,7 @@ void setWindowTitle_WAYLAND(const cv::String &winname, const cv::String &title) 
         window->set_title(title);
 }
 
-CV_IMPL int cvWaitKey(int delay) {
+int waitKeyImpl(int delay) {
     int key = -1;
     auto limit = ch::duration_cast<ch::nanoseconds>(ch::milliseconds(delay)).count();
     auto start_time = ch::duration_cast<ch::nanoseconds>(
@@ -2630,13 +2604,13 @@ CV_IMPL int cvWaitKey(int delay) {
 }
 
 #ifdef HAVE_OPENGL
-CV_IMPL void cvSetOpenGlDrawCallback(const char *, CvOpenGlDrawCallback, void *) {
+void setOpenGLDrawCallbackImpl(const char *, CvOpenGlDrawCallback, void *) {
 }
 
-CV_IMPL void cvSetOpenGlContext(const char *) {
+void setOpenGLContextImpl(const char *) {
 }
 
-CV_IMPL void cvUpdateWindow(const char *) {
+void updateWindowImpl(const char *) {
 }
 #endif // HAVE_OPENGL
 
