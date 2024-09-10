@@ -17,6 +17,7 @@ set(highgui_hdrs
 set(highgui_srcs
     ${CMAKE_CURRENT_LIST_DIR}/src/backend.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/window.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/window_legacy.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/roiSelector.cpp
     )
 
