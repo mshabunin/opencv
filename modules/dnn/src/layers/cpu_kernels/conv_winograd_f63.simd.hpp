@@ -426,7 +426,7 @@ cv::dnn::Winofunc getWinofunc_F32()
 
 // end of CV_CPU_COMPILE_AVX
 
-#elif defined CV_CPU_COMPILE_NEON && CV_CPU_COMPILE_NEON
+#elif defined CV_CPU_COMPILE_NEON && CV_CPU_COMPILE_NEON && CV_NEON_AARCH64
 
 /* Accumulate */
 void impl_accum_F32(const uchar* inwptr_, const uchar* wptr_, uchar* outbuf_, int Cg, int iblock,
