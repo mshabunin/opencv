@@ -418,7 +418,6 @@ void impl_AtXA_8x8_F32(const uchar* inptr_, int inpstep,
     _mm256_zeroupper();
 }
 
-#warning AVX/AVX2
 cv::dnn::Winofunc getWinofunc_F32()
 {
     return {&impl_accum_F32, &impl_BtXB_8x8_F32, &impl_AtXA_8x8_F32, 6, 8, 4, "AVX"};
@@ -892,7 +891,6 @@ void impl_AtXA_8x8_F32(const uchar* inptr_, int inpstep,
     vst1_f32(outptr + outstep*5 + 4, vget_low_f32(z51));
 }
 
-#warning NEON
 cv::dnn::Winofunc getWinofunc_F32()
 {
     return {&impl_accum_F32, &impl_BtXB_8x8_F32, &impl_AtXA_8x8_F32, 6, 4, 4, "NEON"};
@@ -1331,7 +1329,6 @@ void impl_AtXA_8x8_F32(const uchar* inptr_, int inpstep,
     v_store_low(outptr + outstep*5 + 4, z51);
 }
 
-#warning SIMD128
 cv::dnn::Winofunc getWinofunc_F32()
 {
     return {&impl_accum_F32, &impl_BtXB_8x8_F32, &impl_AtXA_8x8_F32, 3, 4, 4, "SIMD128"};
@@ -1342,7 +1339,6 @@ cv::dnn::Winofunc getWinofunc_F32()
 #else
 
 
-#warning FALLBACK
 cv::dnn::Winofunc getWinofunc_F32()
 {
     return cv::dnn::Winofunc::empty();
@@ -1844,7 +1840,6 @@ void impl_AtXA_8x8_F16(const uchar* inptr_, int inpstep,
     vst1_f32(outptr + outstep*5 + 4, vget_low_f32(z51));
 }
 
-#warning NEON_FP16
 cv::dnn::Winofunc getWinofunc_F16()
 {
     return {&impl_accum_F16, &impl_BtXB_8x8_F16, &impl_AtXA_8x8_F16, 6, 8, 2, "NEON_FP16"};
@@ -1853,7 +1848,6 @@ cv::dnn::Winofunc getWinofunc_F16()
 // end of NEON_FP16
 #else
 
-#warning FALLBACK_16
 cv::dnn::Winofunc getWinofunc_F16()
 {
     return cv::dnn::Winofunc::empty();
