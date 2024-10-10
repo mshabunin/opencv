@@ -226,7 +226,11 @@ if(CV_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)
   message(WARNING "OpenCV requires LLVM/Clang >= 7.x (detected ${CMAKE_CXX_COMPILER_VERSION}). Your compilation may fail.")
 endif()
 
-# TODO: check other known compilers versions (MSVC?)
+if(MSVC AND MSVC_VERSION LESS 1911)
+  message(WARNING "OpenCV requires MSVC >= 2017 15.3 / 1911 (detected ${CMAKE_CXX_COMPILER_VERSION} / ${MSVC_VERSION}). Your compilation may fail.")
+endif()
+
+# TODO: check other known compilers versions
 
 set(__OPENCV_ENABLE_ATOMIC_LONG_LONG OFF)
 if(HAVE_CXX11 AND (X86 OR X86_64))
