@@ -226,8 +226,9 @@ if(CV_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)
   message(WARNING "OpenCV requires LLVM/Clang >= 7.x (detected ${CMAKE_CXX_COMPILER_VERSION}). Your compilation may fail.")
 endif()
 
-if(MSVC AND MSVC_VERSION LESS 1911)
-  message(WARNING "OpenCV requires MSVC >= 2017 15.3 / 1911 (detected ${CMAKE_CXX_COMPILER_VERSION} / ${MSVC_VERSION}). Your compilation may fail.")
+# Visual Studio 2017 15.7
+if(MSVC AND MSVC_VERSION LESS 1914)
+  message(WARNING "OpenCV requires MSVC >= 2017 15.7 / 1914 (detected ${CMAKE_CXX_COMPILER_VERSION} / ${MSVC_VERSION}). Your compilation may fail.")
 endif()
 
 # TODO: check other known compilers versions
