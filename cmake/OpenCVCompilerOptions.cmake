@@ -342,7 +342,8 @@ if(MSVC)
   endif()
 
   if(HAVE_CXX17)
-    add_definitions(-D_SILENCE_CXX17_C_HEADER_DEPRECATION_WARNING)
+    add_definitions(-D_SILENCE_CXX17_C_HEADER_DEPRECATION_WARNING) # ccomplex removed in C++20, but complex.h is not
+    add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING) # removed in C++26
   endif()
 endif()
 
