@@ -306,7 +306,14 @@ class Builder:
         print("CMake")
         print("=================================")
         print("")
-        execute(cmakecmd, cwd = builddir)
+        try:
+            execute(cmakecmd, cwd = builddir)
+        except Exception as e:
+            print("=== CMakeError.log")
+            with open(os.path.join(builddir, "CMakeFiles", "CMakeError.log")) as f:
+                for l in f.readlines():
+                    print(l.rstrip())
+            raise e
         print("")
         print("=================================")
         print("Xcodebuild")
