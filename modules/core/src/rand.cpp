@@ -56,7 +56,7 @@ namespace cv
    carry = floor (temp / (2^32))
 */
 
-#define  RNG_NEXT(x)    ((uint64)(unsigned)(x)*CV_RNG_COEFF + ((x) >> 32))
+#define  RNG_NEXT(x)    ((uint64)(unsigned)(x) * /*CV_RNG_COEFF*/ 4164903690U + ((x) >> 32))
 // make it jump-less
 #define  CN_NEXT(k)     (((k) + 1) & (((k) >= cn) - 1))
 

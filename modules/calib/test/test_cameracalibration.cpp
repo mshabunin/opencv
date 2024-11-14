@@ -226,7 +226,7 @@ void CV_ProjectPointsTest::prepare_to_validation( int /*test_case_idx*/ )
         {
             cvTsGEMM( &test_mat[OUTPUT][1], &test_mat[OUTPUT][3],
                       1, 0, 0, &test_mat[OUTPUT][4],
-                      v2m_jac->rows == 3 ? 0 : CV_GEMM_A_T + CV_GEMM_B_T );
+                      v2m_jac->rows == 3 ? 0 : GEMM_1_T + GEMM_2_T );
         }
         else
         {

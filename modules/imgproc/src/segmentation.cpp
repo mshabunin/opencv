@@ -397,7 +397,6 @@ void cv::pyrMeanShiftFiltering( InputArray _src, OutputArray _dst,
     }
 
     mask0.create(src0.rows, src0.cols, CV_8UC1);
-    //CV_CALL( submask = (uchar*)cvAlloc( (sp+2)*(sp+2) ));
 
     // 2. apply meanshift, starting from the pyramid top (i.e. the smallest layer)
     for( level = max_level; level >= 0; level-- )
