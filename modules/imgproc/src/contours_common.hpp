@@ -27,6 +27,48 @@ inline schar clamp_direction(schar dir)
     return std::min(dir, (schar)15);
 }
 
+// BLOCK_SIZE - number of elements in a block
+template <typename T, size_t BLOCK_SIZE = 1024>
+class BlockStorage {
+public:
+    using value_type = T;
+    using block_type = T*;
+
+    BlockStorage() : sz(0)
+    {
+        blocks.push_back(new value_type[BLOCK_SIZE]);
+    }
+
+    // Add an element to the storage
+    void push_back(const T& value) {
+        if ((sz > 0) && (sz % BLOCK_SIZE == 0)) {
+            blocks.push_back(new value_type[BLOCK_SIZE]);
+        }
+        block_type & cur_block = *(blocks.end() - 1);
+        cur_block[sz % BLOCK_SIZE] = value;
+        ++sz;
+    }
+
+    size_t size() const { return sz; }
+
+    const value_type & at(size_t index) const {
+        const block_type & cur_block = blocks.at(index / BLOCK_SIZE);
+        return cur_block[index % BLOCK_SIZE];
+    }
+
+    ~BlockStorage() {
+        for(const auto & block : blocks) {
+            delete[] block;
+        }
+    }
+
+private:
+
+    std::vector<value_type*> blocks;
+    size_t sz;
+};
+
+
 
 template <typename T, size_t CAPACITY = 4096>
 class ArenaStackBuffer
@@ -210,7 +252,7 @@ class ArenaDynamicBufferIndexed
                 index_storage_t _index;
         };
     public:
-        ArenaDynamicBufferIndexed(void) {_buffer.reserve(CAPACITY/sizeof(T));}
+        ArenaDynamicBufferIndexed(void) {_buffer.reserve(6000000);}
         ArenaDynamicBufferIndexed(const ArenaDynamicBufferIndexed&) = delete;
         ArenaDynamicBufferIndexed(ArenaDynamicBufferIndexed&&) noexcept = delete;
         ~ArenaDynamicBufferIndexed() = default;
@@ -437,8 +479,8 @@ public:
     T body;
 
 public:
-    TreeNode(int self, ContourArena* arena) :
-        self_(self), parent(-1), first_child(-1), prev(-1), next(-1), ctable_next(-1), body(arena)
+    TreeNode(int self, T body_) :
+        self_(self), parent(-1), first_child(-1), prev(-1), next(-1), ctable_next(-1), body(body_)
     {
         CV_Assert(self >= 0);
     }
@@ -456,27 +498,28 @@ template <typename T>
 class Tree
 {
 public:
-    Tree(ContourArena* contoursArena):_contoursArena(contoursArena) {}
+    Tree() {}
+    // Tree(ContourArena* contoursArena):_contoursArena(contoursArena) {}
     Tree(const Tree&) = delete;
     Tree(Tree&&) = delete;
     Tree& operator=(const Tree&) = delete;
     Tree& operator=(Tree&&) = delete;
     ~Tree() = default;
+// private:
+    // ContourArena* _contoursArena;
+    // ArenaStackBuffer<TreeNode<T> > _treeNodesArena;
+// public:
+    // typename vectorWithArena<int>::arena_t _treeIteratorArena;
 private:
-    ContourArena* _contoursArena;
-    ArenaStackBuffer<TreeNode<T> > _treeNodesArena;
-public:
-    typename vectorWithArena<int>::arena_t _treeIteratorArena;
-private:
-    typedef typename ArenaStackBuffer<TreeNode<T> >::Item node_t;
-    std::vector<node_t> nodes;
+    // typedef typename ArenaStackBuffer<TreeNode<T> >::Item node_t;
+    std::vector<TreeNode<T>> nodes;
 
 public:
-    TreeNode<T>& newElem()
+    TreeNode<T>& newElem(T && body_)
     {
         const size_t idx = nodes.size();
         CV_DbgAssert(idx < (size_t)std::numeric_limits<int>::max());
-        nodes.emplace_back(std::move(_treeNodesArena.newItem((int)idx, _contoursArena)));
+        nodes.push_back(TreeNode<T>((int)idx, body_));
         return nodes[idx];
     }
     TreeNode<T>& elem(int idx)
@@ -577,42 +620,53 @@ private:
 class Contour
 {
 public:
-    ContourArena* _arena;
+    BlockStorage<cv::Point> & storage;
+    size_t start, end;
     cv::Rect brect;
     cv::Point origin;
-    ContourPointsStorage pts;
+    // ContourPointsStorage pts;
     std::vector<schar> codes;
     bool isHole;
     bool isChain;
 
-    explicit Contour(ContourArena* arena) : _arena(arena), isHole(false), isChain(false) {
+    explicit Contour(BlockStorage<cv::Point, 1024> & storage_) : storage(storage_), start(0), end(0), isHole(false), isChain(false) {
     }
-    Contour(const Contour&) = delete;
-    Contour(Contour&& other) noexcept {*this = std::move(other);}
-    Contour& operator=(const Contour&) = delete;
-    Contour& operator=(Contour&& other) noexcept {
-        if (&other != this) {
-            std::swap(this->_arena, other._arena);
-            std::swap(this->brect, other.brect);
-            std::swap(this->origin, other.origin);
-            std::swap(this->pts, other.pts);
-            std::swap(this->codes, other.codes);
-            std::swap(this->isHole, other.isHole);
-            std::swap(this->isChain, other.isChain);
-        }
-        return *this;
-    }
+    // Contour(const Contour&) = delete;
+    // Contour(Contour&& other) noexcept {*this = std::move(other);}
+    // Contour& operator=(const Contour&) = delete;
+    // Contour& operator=(Contour&& other) noexcept {
+    //     if (&other != this) {
+    //         std::swap(this->storage, other.storage);
+    //         std::swap(this->brect, other.brect);
+    //         std::swap(this->origin, other.origin);
+    //         // std::swap(this->pts, other.pts);
+    //         std::swap(this->codes, other.codes);
+    //         std::swap(this->isHole, other.isHole);
+    //         std::swap(this->isChain, other.isChain);
+    //     }
+    //     return *this;
+    // }
     ~Contour() {
-      _arena->releaseItems(pts);
+    //   _arena->releaseItems(pts);
     }
     void updateBoundingRect() {}
     bool isEmpty() const
     {
-        return pts.size() == 0 && codes.size() == 0;
+        // return pts.size() == 0 && codes.size() == 0;
+        return end - start == 0;
     }
     size_t size() const
     {
-        return isChain ? codes.size() : pts.size();
+        // return isChain ? codes.size() : pts.size();
+        return end - start;
+    }
+    void addPoint(const Point& pt)
+    {
+        if (isEmpty()) {
+            start = storage.size();
+        }
+        storage.push_back(pt);
+        end = storage.size();
     }
     void copyTo(void* data) const
     {
@@ -624,14 +678,10 @@ public:
         }
         else
         {
-          unsigned char* dst = reinterpret_cast<unsigned char*>(data);
-          memcpy(dst, &_arena->get(*pts.begin()), pts.size()*sizeof(Point));
-          /*for(auto& it : pts)
-          {
-            const Point& point = _arena->get(it);
-            memcpy(dst, &point, sizeof(point));
-            dst += sizeof(point);
-          }*/
+            for (size_t i = start; i < end; i++)
+            {
+                ((Point*)data)[i - start] = storage.at(i);
+            }
         }
     }
 };

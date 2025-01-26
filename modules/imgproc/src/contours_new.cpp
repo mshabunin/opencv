@@ -170,8 +170,7 @@ static bool icvTraceContour(Mat& image, const Point& start, const Point& end, bo
 }
 
 template <typename T>
-static void icvFetchContourEx(ContourArena& arena,
-                              Mat& image,
+static void icvFetchContourEx(Mat& image,
                               const Point& start,
                               T nbd,
                               Contour& res_contour,
@@ -198,7 +197,7 @@ static void icvFetchContourEx(ContourArena& arena,
         Trait<T>::setRightFlag(i0, i0, nbd);
         if (!res_contour.isChain)
         {
-            res_contour.pts.emplace_back(arena.newItem(pt));
+            res_contour.addPoint(pt);
         }
     }
     else
@@ -237,7 +236,7 @@ static void icvFetchContourEx(ContourArena& arena,
             }
             else if (s != prev_s || isDirect)
             {
-                res_contour.pts.emplace_back(arena.newItem(pt));
+                res_contour.addPoint(pt);
             }
 
             if (s != prev_s)
@@ -282,7 +281,9 @@ static void icvFetchContourEx(ContourArena& arena,
 // It supports both hierarchical and plane variants of Suzuki algorithm.
 struct ContourScanner_
 {
-    ContourArena arena;
+    // ContourArena arena;
+    BlockStorage<Point, 1024> storage;
+
     Mat image;
     Point offset;  // ROI offset: coordinates, added to each contour point
     Point pt;  // current scanner position
@@ -295,7 +296,7 @@ struct ContourScanner_
     array<int, 128> ctable;
 
 public:
-    ContourScanner_():tree(&arena) {}
+    ContourScanner_() {}
     ~ContourScanner_() {}
     inline bool isInt() const
     {
@@ -351,7 +352,7 @@ shared_ptr<ContourScanner_> ContourScanner_::create(Mat img, int mode, int metho
     scanner->pt = Point(1, 1);
     scanner->lnbd = Point(0, 1);
     scanner->nbd = 2;
-    CNode& root = scanner->tree.newElem();
+    CNode& root = scanner->tree.newElem(Contour(scanner->storage));
     CV_Assert(root.self() == 0);
     root.body.isHole = true;
     root.body.brect = Rect(Point(0, 0), size);
@@ -369,13 +370,13 @@ CNode& ContourScanner_::makeContour(schar& nbd_, const bool is_hole, const int x
 
     const Point start_pt(x - (is_hole ? 1 : 0), y);
 
-    CNode& res = tree.newElem();
+    CNode& res = tree.newElem(Contour(storage));
     res.body.isHole = is_hole;
     res.body.isChain = isChain;
     res.body.origin = start_pt + offset;
     if (isSimple())
     {
-        icvFetchContourEx<schar>(this->arena, this->image, start_pt, MASK8_NEW, res.body, isDirect);
+        icvFetchContourEx<schar>(this->image, start_pt, MASK8_NEW, res.body, isDirect);
     }
     else
     {
@@ -384,7 +385,7 @@ CNode& ContourScanner_::makeContour(schar& nbd_, const bool is_hole, const int x
         {
             const int start_val = this->image.at<int>(start_pt);
             lval = start_val & MASK8_LVAL;
-            icvFetchContourEx<int>(this->arena, this->image, start_pt, 0, res.body, isDirect);
+            icvFetchContourEx<int>(this->image, start_pt, 0, res.body, isDirect);
         }
         else
         {
@@ -393,19 +394,19 @@ CNode& ContourScanner_::makeContour(schar& nbd_, const bool is_hole, const int x
             nbd_ = (nbd_ + 1) & MASK8_LVAL;
             if (nbd_ == 0)
                 nbd_ = MASK8_BLACK | MASK8_NEW;
-            icvFetchContourEx<schar>(this->arena, this->image, start_pt, lval, res.body, isDirect);
+            icvFetchContourEx<schar>(this->image, start_pt, lval, res.body, isDirect);
         }
         res.body.brect.x -= this->offset.x;
         res.body.brect.y -= this->offset.y;
         res.ctable_next = this->ctable[lval];
         this->ctable[lval] = res.self();
     }
-    const Point prev_origin = res.body.origin;
+    // const Point prev_origin = res.body.origin;
     res.body.origin = start_pt;
     if (this->approx_method1 != this->approx_method2)
     {
         CV_Assert(res.body.isChain);
-        approximateChainTC89(arena, res.body.codes, prev_origin, this->approx_method2, res.body.pts);
+        // approximateChainTC89(arena, res.body.codes, prev_origin, this->approx_method2, res.body.pts);
         res.body.isChain = false;
     }
     return res;
