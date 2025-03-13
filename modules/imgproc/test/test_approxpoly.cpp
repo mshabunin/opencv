@@ -55,305 +55,246 @@ namespace opencv_test { namespace {
 //  a subset of vertices of the original contour.
 //
 
-class CV_ApproxPolyTest : public cvtest::BaseTest
-{
+
+class CV_ApproxPolyTest : public cvtest::BaseTest {
 public:
-    CV_ApproxPolyTest();
-    ~CV_ApproxPolyTest();
-    void clear();
-    //int write_default_params(CvFileStorage* fs);
+    CV_ApproxPolyTest() {}
+    ~CV_ApproxPolyTest() {}
 
 protected:
-    //int read_params( const cv::FileStorage& fs );
+    void clear();
+    bool get_contour(std::vector<cv::Point>& contour);
+    int check_slice(const cv::Point& startPt, const cv::Point& endPt,
+                    const std::vector<cv::Point>& srcContour, double epsilon);
+    int check(const std::vector<cv::Point>& srcContour, 
+              const std::vector<cv::Point>& dstContour, double epsilon);
 
-    int check_slice( CvPoint StartPt, CvPoint EndPt,
-                     CvSeqReader* SrcReader, float Eps,
-                     int* j, int Count );
-    int check( CvSeq* SrcSeq, CvSeq* DstSeq, float Eps );
+    void run(int /*start_from*/) override;
 
-    bool get_contour( int /*type*/, CvSeq** Seq, int* d,
-                      CvMemStorage* storage );
-
-    void run(int);
+private:
+    cv::RNG rng;
 };
 
-
-CV_ApproxPolyTest::CV_ApproxPolyTest()
-{
+void CV_ApproxPolyTest::clear() {
+    BaseTest::clear();
 }
 
+bool CV_ApproxPolyTest::get_contour(std::vector<cv::Point>& contour) {
+    int totalPoints = rng.uniform(1, 1000);
+    cv::Point center(rng.uniform(0, 1000), rng.uniform(0, 1000));
+    double radius = rng.uniform(1, 1000);
+    double angleStep = CV_2PI / totalPoints;
 
-CV_ApproxPolyTest::~CV_ApproxPolyTest()
-{
-    clear();
-}
-
-
-void CV_ApproxPolyTest::clear()
-{
-    cvtest::BaseTest::clear();
-}
-
-
-/*int CV_ApproxPolyTest::write_default_params( CvFileStorage* fs )
-{
-    cvtest::BaseTest::write_default_params( fs );
-    if( ts->get_testing_mode() != cvtest::TS::TIMING_MODE )
-    {
-        write_param( fs, "test_case_count", test_case_count );
-    }
-    return 0;
-}
-
-
-int CV_ApproxPolyTest::read_params( const cv::FileStorage& fs )
-{
-    int code = cvtest::BaseTest::read_params( fs );
-    if( code < 0 )
-        return code;
-
-    test_case_count = cvReadInt( find_param( fs, "test_case_count" ), test_case_count );
-    min_log_size = cvtest::clipInt( min_log_size, 1, 10 );
-    return 0;
-}*/
-
-
-bool CV_ApproxPolyTest::get_contour( int /*type*/, CvSeq** Seq, int* d,
-                                     CvMemStorage* storage )
-{
-    RNG& rng = ts->get_rng();
-    int max_x = INT_MIN, max_y = INT_MIN, min_x = INT_MAX, min_y = INT_MAX;
-    int i;
-    CvSeq* seq;
-    int total = cvtest::randInt(rng) % 1000 + 1;
-    Point center;
-    int radius, angle;
-    double deg_to_rad = CV_PI/180.;
-    Point pt;
-
-    center.x = cvtest::randInt( rng ) % 1000;
-    center.y = cvtest::randInt( rng ) % 1000;
-    radius = cvtest::randInt( rng ) % 1000;
-    angle = cvtest::randInt( rng ) % 360;
-
-    seq = cvCreateSeq( CV_SEQ_POLYGON, sizeof(CvContour), sizeof(CvPoint), storage );
-
-    for( i = 0; i < total; i++ )
-    {
-        int d_radius = cvtest::randInt( rng ) % 10 - 5;
-        int d_angle = 360/total;//cvtest::randInt( rng ) % 10 - 5;
-        pt.x = cvRound( center.x + radius*cos(angle*deg_to_rad));
-        pt.y = cvRound( center.x - radius*sin(angle*deg_to_rad));
-        radius += d_radius;
-        angle += d_angle;
-        cvSeqPush( seq, &pt );
-
-        max_x = MAX( max_x, pt.x );
-        max_y = MAX( max_y, pt.y );
-
-        min_x = MIN( min_x, pt.x );
-        min_y = MIN( min_y, pt.y );
+    contour.resize(totalPoints);
+    for (int i = 0; i < totalPoints; ++i) {
+        double angle = i * angleStep;
+        int dRadius = rng.uniform(-5, 6);
+        radius += dRadius;
+        contour[i] = cv::Point(cvRound(center.x + radius * cos(angle)),
+                                cvRound(center.y + radius * sin(angle)));
     }
 
-    *d = (max_x - min_x)*(max_x - min_x) + (max_y - min_y)*(max_y - min_y);
-    *Seq = seq;
     return true;
 }
 
+#include <algorithm>
+#include <cmath>
 
-int CV_ApproxPolyTest::check_slice( CvPoint StartPt, CvPoint EndPt,
-                                   CvSeqReader* SrcReader, float Eps,
-                                   int* _j, int Count )
-{
-    ///////////
-    Point Pt;
-    ///////////
-    bool flag;
-    double dy,dx;
-    double A,B,C;
-    double Sq;
-    double sin_a = 0;
-    double cos_a = 0;
-    double d     = 0;
-    double dist;
-    ///////////
-    int j, TotalErrors = 0;
+bool is_point_on_segment(const cv::Point& p, const cv::Point& startPt, const cv::Point& endPt) {
+    double dx = static_cast<double>(endPt.x - startPt.x);
+    double dy = static_cast<double>(endPt.y - startPt.y);
+    double dxc = static_cast<double>(p.x - startPt.x);
+    double dyc = static_cast<double>(p.y - startPt.y);
 
-    ////////////////////////////////
-    if( SrcReader == NULL )
-    {
-        CV_Assert( false );
-        return 0;
-    }
+    // Check if point is collinear with the segment
+    double cross = dx * dyc - dy * dxc;
+    if (std::abs(cross) > std::numeric_limits<double>::epsilon())
+        return false;
 
-    ///////// init line ////////////
-    flag = true;
+    // Check if point lies within the bounds of the segment
+    double dot = dxc * dx + dyc * dy;
+    if (dot < 0)
+        return false;
 
-    dx = (double)StartPt.x - (double)EndPt.x;
-    dy = (double)StartPt.y - (double)EndPt.y;
+    double len2 = dx * dx + dy * dy;
+    if (dot > len2)
+        return false;
 
-    if( ( dx == 0 ) && ( dy == 0 ) ) flag = false;
-    else
-    {
-        A = -dy;
-        B = dx;
-        C = dy * (double)StartPt.x - dx * (double)StartPt.y;
-        Sq = sqrt( A*A + B*B );
-
-        sin_a = B/Sq;
-        cos_a = A/Sq;
-        d = C/Sq;
-    }
-
-    /////// find start point and check distance ////////
-    for( j = *_j; j < Count; j++ )
-    {
-        { CvPoint pt_ = CV_STRUCT_INITIALIZER; CV_READ_SEQ_ELEM(pt_, *SrcReader); Pt = pt_; }
-        if( StartPt.x == Pt.x && StartPt.y == Pt.y ) break;
-        else
-        {
-            if( flag ) dist = sin_a * Pt.y + cos_a * Pt.x - d;
-            else dist = sqrt( (double)(EndPt.y - Pt.y)*(EndPt.y - Pt.y) + (EndPt.x - Pt.x)*(EndPt.x - Pt.x) );
-            if( dist > Eps ) TotalErrors++;
-        }
-    }
-
-    *_j = j;
-
-    (void) TotalErrors; // To avoid -Wunused-but-set-variable warning
-    //return TotalErrors;
-    return 0;
+    return true;
 }
 
+int CV_ApproxPolyTest::check_slice(const cv::Point& startPt, const cv::Point& endPt,
+                                    const std::vector<cv::Point>& srcContour, double epsilon) {
+    double dx = static_cast<double>(endPt.x - startPt.x);
+    double dy = static_cast<double>(endPt.y - startPt.y);
 
-int CV_ApproxPolyTest::check( CvSeq* SrcSeq, CvSeq* DstSeq, float Eps )
-{
-    //////////
-    CvSeqReader  DstReader;
-    CvSeqReader  SrcReader;
-    CvPoint StartPt = {0, 0}, EndPt = {0, 0};
-    ///////////
+    if (dx == 0 && dy == 0) return 0; // Zero-length segment
+
+    double A = -dy;
+    double B = dx;
+    double C = dy * startPt.x - dx * startPt.y;
+    double Sq = std::sqrt(A * A + B * B);
+    double sin_a = B / Sq;
+    double cos_a = A / Sq;
+    double d = C / Sq;
+
     int TotalErrors = 0;
-    ///////////
-    int Count;
-    int i,j;
+    for (const auto& pt : srcContour) {
+        if (pt == startPt || pt == endPt) continue; // Skip the endpoints
 
-    CV_Assert( SrcSeq && DstSeq );
+        // Calculate the perpendicular distance from the point to the line
+        double dist = std::abs(sin_a * pt.y + cos_a * pt.x - d);
 
-    ////////// init ////////////////////
-    Count = SrcSeq->total;
-
-    cvStartReadSeq( DstSeq, &DstReader, 0 );
-    cvStartReadSeq( SrcSeq, &SrcReader, 0 );
-
-    CV_READ_SEQ_ELEM( StartPt, DstReader );
-    for( i = 0 ; i < Count ;  )
-    {
-        CV_READ_SEQ_ELEM( EndPt, SrcReader );
-        i++;
-        if( StartPt.x == EndPt.x && StartPt.y == EndPt.y ) break;
+        // Check if the point is within the segment using a helper function
+        if (is_point_on_segment(pt, startPt, endPt)) {
+            if (dist > epsilon) ++TotalErrors;
+        }
     }
-
-    ///////// start ////////////////
-    for( i = 1, j = 0 ; i <= DstSeq->total ;  )
-    {
-        ///////// read slice ////////////
-        EndPt.x = StartPt.x;
-        EndPt.y = StartPt.y;
-        CV_READ_SEQ_ELEM( StartPt, DstReader );
-        i++;
-
-        TotalErrors += check_slice( StartPt, EndPt, &SrcReader, Eps, &j, Count );
-
-        if( j > Count )
-        {
-            TotalErrors++;
-            return TotalErrors;
-        } //if( !flag )
-
-    } // for( int i = 0 ; i < DstSeq->total ; i++ )
 
     return TotalErrors;
 }
 
+int CV_ApproxPolyTest::check(const std::vector<cv::Point>& srcContour, 
+                              const std::vector<cv::Point>& dstContour, double epsilon) {
+    int TotalErrors = 0;
+    size_t count = srcContour.size();
 
-//extern CvTestContourGenerator cvTsTestContours[];
+    for (size_t i = 1; i < dstContour.size(); ++i) {
+        cv::Point startPt = dstContour[i - 1];
+        cv::Point endPt = dstContour[i];
 
-void CV_ApproxPolyTest::run( int /*start_from*/ )
-{
-    int code = cvtest::TS::OK;
-    CvMemStorage* storage = 0;
-    ////////////// Variables ////////////////
-    int IntervalsCount = 10;
-    ///////////
-    //CvTestContourGenerator Cont;
-    CvSeq*  SrcSeq = NULL;
-    CvSeq*  DstSeq;
-    int     iDiam;
-    float   dDiam, Eps, EpsStep;
+        TotalErrors += check_slice(startPt, endPt, srcContour, epsilon);
 
-    for( int i = 0; i < 30; i++ )
-    {
-        CvMemStoragePos pos;
+        if (startPt == endPt && TotalErrors > 0)
+            break;
+    }
 
-        ts->update_context( this, i, false );
+    // Check the last segment connecting back to the first point
+    cv::Point startPt = dstContour.back();
+    cv::Point endPt = dstContour.front();
 
-        ///////////////////// init contour /////////
-        dDiam = 0;
-        while( sqrt(dDiam) / IntervalsCount == 0 )
-        {
-            if( storage != 0 )
-                cvReleaseMemStorage(&storage);
+    TotalErrors += check_slice(startPt, endPt, srcContour, epsilon);
 
-            storage = cvCreateMemStorage( 0 );
-            if( get_contour( 0, &SrcSeq, &iDiam, storage ) )
-                dDiam = (float)iDiam;
-        }
-        dDiam = (float)sqrt( dDiam );
-
-        storage = SrcSeq->storage;
-
-        ////////////////// test /////////////
-        EpsStep = dDiam / IntervalsCount ;
-        for( Eps = EpsStep ; Eps < dDiam ; Eps += EpsStep )
-        {
-            cvSaveMemStoragePos( storage, &pos );
-
-            ////////// call function ////////////
-            DstSeq = cvApproxPoly( SrcSeq, SrcSeq->header_size, storage,
-                CV_POLY_APPROX_DP, Eps );
-
-            if( DstSeq == NULL )
-            {
-                ts->printf( cvtest::TS::LOG,
-                    "cvApproxPoly returned NULL for contour #%d, epsilon = %g\n", i, Eps );
-                code = cvtest::TS::FAIL_INVALID_OUTPUT;
-                goto _exit_;
-            } // if( DstSeq == NULL )
-
-            code = check( SrcSeq, DstSeq, Eps );
-            if( code != 0 )
-            {
-                ts->printf( cvtest::TS::LOG,
-                    "Incorrect result for the contour #%d approximated with epsilon=%g\n", i, Eps );
-                code = cvtest::TS::FAIL_BAD_ACCURACY;
-                goto _exit_;
-            }
-
-            cvRestoreMemStoragePos( storage, &pos );
-        } // for( Eps = EpsStep ; Eps <= Diam ; Eps += EpsStep )
-
-        ///////////// free memory  ///////////////////
-        cvReleaseMemStorage(&storage);
-    } // for( int i = 0; NULL != ( Cont = Contours[i] ) ; i++ )
-
-_exit_:
-    cvReleaseMemStorage(&storage);
-
-    if( code < 0 )
-        ts->set_failed_test_info( code );
+    return TotalErrors;
 }
 
+void CV_ApproxPolyTest::run(int /*start_from*/) {
+    int code = cvtest::TS::OK;
+
+    for (int i = 0; i < 30; ++i) {
+        std::vector<cv::Point> srcContour;
+        if (!get_contour(srcContour)) {
+            ts->printf(cvtest::TS::LOG, "Failed to generate contour #%d\n", i);
+            code = cvtest::TS::FAIL_INVALID_OUTPUT;
+            break;
+        }
+
+        double maxDiameter = 0;
+        for (const auto& pt : srcContour) {
+            double d = cv::norm(pt);
+            if (d > maxDiameter) maxDiameter = d;
+        }
+
+        int intervalsCount = 10;
+        double epsilonStep = maxDiameter / intervalsCount;
+
+        for (double epsilon = epsilonStep; epsilon < maxDiameter; epsilon += epsilonStep) {
+            std::vector<cv::Point> approxContour;
+            cv::approxPolyDP(srcContour, approxContour, epsilon, true);
+
+            if (approxContour.empty()) {
+                ts->printf(cvtest::TS::LOG,
+                           "cvApproxPolyDP returned empty contour for contour #%d, epsilon = %g\n", i, epsilon);
+                code = cvtest::TS::FAIL_INVALID_OUTPUT;
+                break;
+            }
+
+            int totalErrors = check(srcContour, approxContour, epsilon);
+            if (totalErrors != 0) {
+                ts->printf(cvtest::TS::LOG,
+                           "Incorrect result for the contour #%d approximated with epsilon=%g\n", i, epsilon);
+
+                // Verbose logging
+                ts->printf(cvtest::TS::LOG, "Original Contour:\n");
+                for (const auto& pt : srcContour) {
+                    ts->printf(cvtest::TS::LOG, "(%d, %d)\n", pt.x, pt.y);
+                }
+                ts->printf(cvtest::TS::LOG, "Approximated Contour:\n");
+                for (const auto& pt : approxContour) {
+                    ts->printf(cvtest::TS::LOG, "(%d, %d)\n", pt.x, pt.y);
+                }
+
+                // Visualize the contours
+                cv::Mat canvas(4000, 4000, CV_8UC3, cv::Scalar(255, 255, 255));
+                std::vector<std::vector<cv::Point>> srcContours{srcContour};
+                std::vector<std::vector<cv::Point>> approxContours{approxContour};
+
+                // Offset contours to make them visible within the canvas
+                int offset = 1300;
+                for (auto& pt : srcContours[0]) {
+                    pt += cv::Point(offset, offset);
+                }
+                for (auto& pt : approxContours[0]) {
+                    pt += cv::Point(offset, offset);
+                }
+
+                // Draw contours
+                cv::drawContours(canvas, srcContours, -1, cv::Scalar(0, 255, 0), 2); // Green for original contour
+                cv::drawContours(canvas, approxContours, -1, cv::Scalar(0, 0, 255), 2); // Red for approximated contour
+
+                // Highlight vertices of the original contour which exceed epsilon distance from the result contour
+                std::vector<cv::Point> errorVertices;
+                for (const auto& pt : srcContour) {
+                    double minDist = std::numeric_limits<double>::max();
+                    for (size_t j = 0; j < approxContour.size(); ++j) {
+                        cv::Point startPt = approxContour[j];
+                        cv::Point endPt = approxContour[(j + 1) % approxContour.size()];
+
+                        double dist;
+                        if (startPt == endPt) {
+                            dist = cv::norm(pt - startPt);
+                        } else {
+                            // Check if the point is on the line segment
+                            double t = ((pt.x - startPt.x) * (endPt.x - startPt.x) + 
+                                         (pt.y - startPt.y) * (endPt.y - startPt.y)) / 
+                                        cv::norm(endPt - startPt);
+                            
+                            if (t < 0)
+                                dist = cv::norm(pt - startPt);
+                            else if (t > 1)
+                                dist = cv::norm(pt - endPt);
+                            else {
+                                cv::Point projection = startPt + t * (endPt - startPt);
+                                dist = cv::norm(pt - projection);
+                }
+                        }
+
+                        minDist = std::min(minDist, dist);
+                    }
+
+                    if (minDist > epsilon) {
+                        errorVertices.push_back(pt);
+                    }
+                }
+                // Draw incorrect vertices in blue
+                for (const auto& pt : errorVertices) {
+                    cv::circle(canvas, pt + cv::Point(offset, offset), 5, cv::Scalar(255, 0, 0), -1); // Blue color
+                }
+
+                // Save or display the visualization
+                std::string fileName = "contour_failure_" + std::to_string(i) + "_epsilon_" + std::to_string(epsilon) + ".png";
+                cv::imwrite(fileName, canvas);
+                ts->printf(cvtest::TS::LOG, "Visualization saved to %s\n", fileName.c_str());
+
+                code = cvtest::TS::FAIL_BAD_ACCURACY;
+                break;
+            }
+        }
+    }
+
+    if (code < 0)
+        ts->set_failed_test_info(code);
+}
 TEST(Imgproc_ApproxPoly, accuracy) { CV_ApproxPolyTest test; test.safe_run(); }
 
 //Tests to make sure that unreasonable epsilon (error)
@@ -451,5 +392,6 @@ TEST_F(ApproxPolyN, bad_args)
     ASSERT_ANY_THROW(approxPolyN(contour, corners, 3, 0));
     ASSERT_ANY_THROW(approxPolyN(bad_contours, corners, 4));
 }
+
 
 }} // namespace
