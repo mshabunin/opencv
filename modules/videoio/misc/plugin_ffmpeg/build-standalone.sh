@@ -8,6 +8,7 @@ cmake -GNinja \
     -DOPENCV_PLUGIN_NAME=opencv_videoio_ffmpeg_shared_$2 \
     -DOPENCV_PLUGIN_DESTINATION=$1 \
     -DCMAKE_BUILD_TYPE=$3 \
+    -DOPENCV_PLUGIN_NO_LINK=ON \
     /opencv/modules/videoio/misc/plugin_ffmpeg
 ninja
 popd
@@ -19,6 +20,7 @@ cmake -GNinja \
     -DOPENCV_PLUGIN_DESTINATION=$1 \
     -DCMAKE_MODULE_LINKER_FLAGS=-Wl,-Bsymbolic \
     -DCMAKE_BUILD_TYPE=$3 \
+    -DOPENCV_PLUGIN_NO_LINK=ON \
     /opencv/modules/videoio/misc/plugin_ffmpeg
 ninja
 popd

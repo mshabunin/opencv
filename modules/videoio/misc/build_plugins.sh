@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -exu
 
 if [ -z $1 ] ; then
     echo "$0 <destination directory>"
@@ -74,8 +74,8 @@ echo "OpenCV: ${OCV}"
 echo "Destination: ${DST}"
 
 build_gstreamer
-build_ffmpeg_ubuntu 18.04
-build_ffmpeg_ubuntu 16.04
+build_ffmpeg_ubuntu 22.04
+build_ffmpeg_ubuntu 24.04
+build_ffmpeg 7.1.1
+build_ffmpeg 5.1.6
 build_ffmpeg 4.1
-build_ffmpeg 3.4.5
-build_ffmpeg 2.8.15

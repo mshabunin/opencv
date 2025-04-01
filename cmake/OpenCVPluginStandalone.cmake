@@ -87,7 +87,10 @@ function(ocv_create_plugin module default_name dependency_target dependency_targ
   if(OPENCV_PLUGIN_NO_LINK)
     if(APPLE)
       set_target_properties(${OPENCV_PLUGIN_NAME} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+    elseif(UNIX)
+      set_target_properties(${OPENCV_PLUGIN_NAME} PROPERTIES LINK_FLAGS "-Wl,--allow-shlib-undefined -Wl,-zundefs")
     endif()
+
   else()
     find_package(OpenCV REQUIRED ${module} ${OPENCV_PLUGIN_DEPS})
     target_link_libraries(${OPENCV_PLUGIN_NAME} PRIVATE ${OpenCV_LIBRARIES})
