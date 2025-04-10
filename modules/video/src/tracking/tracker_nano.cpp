@@ -194,8 +194,10 @@ void TrackerNanoImpl::init(InputArray image_, const Rect &boundingBox_)
     getSubwindow(crop, image, sz, exemplarSize);
     Mat blob = dnn::blobFromImage(crop, 1.0, Size(), Scalar(), trackState.swapRB);
 
+
     backbone.setInput(blob);
     Mat out = backbone.forward(); // Feature extraction.
+    scoreSize = out.size[1] == 48 ? 16 : 15; // V2 / V3 distinction
     neckhead.setInput(out, "input1");
 
     createHanningWindow(hanningWindow, Size(scoreSize, scoreSize), CV_32F);
